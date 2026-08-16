@@ -1,0 +1,20 @@
+from enum import Enum
+
+class ResponseStatus(Enum):
+    FILE_TYPE_NOT_SUPPORTED = "File type is not supported."
+    FILE_SIZE_EXCEEDED = "File size exceeds the maximum allowed size."
+    FILE_UPLOADED_SUCCESSFULLY = "File uploaded successfully."
+    FILE_UPLOAD_FAILED = "File upload failed."
+    FILE_VALIDATED_SUCCESSFULLY = "File validated successfully."
+    FILE_PROCESSED_SUCCESSFULLY = "File processed successfully."
+    FILE_PROCESSING_FAILED = "File processing failed."
+    FILE_ID_ERROR = "File ID does not exist in the project."
+    NO_FILES_FOUNDED_TO_PROCESS = "No files found to process in the project."
+    PROJECT_NOT_FOUND_ERROR = "project_not_found"
+    INSERT_INTO_VECTORDB_ERROR = "insert_into_vectordb_error"
+    INSERT_INTO_VECTORDB_SUCCESS = "insert_into_vectordb_success"
+    VECTORDB_COLLECTION_RETRIEVED = "vectordb_collection_retrieved"
+    VECTORDB_SEARCH_ERROR = "vectordb_search_error"
+    VECTORDB_SEARCH_SUCCESS = "vectordb_search_success"
+    RAG_ANSWER_ERROR = "rag_answer_error"
+    RAG_ANSWER_SUCCESS = "rag_answer_success"
