@@ -3,6 +3,7 @@ from models.db_schemes.document import Document
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.errors import ConnectionFailure
 import logging
+import gridfs
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class DocumentModel:
             logger.info(f"Collection '{DataBaseEnums.DOCUMENTS_COLLECTION.value}' created.")
 
     async def upload_document(self, doc: Document):
-        result = await self.collection.insert_one(doc.model_dump(by_alias=True))
+        result = await self.collection.insert_one(document=doc.dict(by_alias=True))
         return str(result.inserted_id)
 
     async def delete_document(self, doc_name: str):

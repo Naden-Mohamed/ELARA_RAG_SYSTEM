@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field
 from typing import Generic, TypeVar, Literal
 from datetime import datetime
-from models.enums.responce_status import ResponseStatus
+from models.enums.ResponceStatusEnum import ResponseStatus
 
 
 T = TypeVar("T")
