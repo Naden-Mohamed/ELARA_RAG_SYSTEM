@@ -17,6 +17,7 @@ from routers.schemas.rag_requests import UserPersonaEnum, LanguageEnum, MockChun
 
 load_dotenv()
 
+
 class LLMService:
     def __init__(self):
         settings = get_settings()
@@ -32,6 +33,31 @@ class LLMService:
             PERSONA_RULES[(UserPersonaEnum.GENERAL, language)]
         )
         return f"{base}{persona_rule}"
+
+    def build_system_prompt_with_memory(
+        self, 
+        persona: UserPersonaEnum, 
+        language: LanguageEnum, 
+        mother_profile: dict | None = None,
+        dynamic_memories: list[str] | None = None
+    ) -> str:
+        base_prompt = self.build_system_prompt(persona, language)
+        
+        if persona == UserPersonaEnum.MOTHER and mother_profile:
+            profile_lines = [
+                f"- حالة الحمل: {mother_profile.get('pregnancy_status', 'N/A')}",
+                f"- الأسبوع الحالي: {mother_profile.get('current_week', 'غير محدد')}",
+                f"- عدد مرات الحمل/الولادة: {mother_profile.get('pregnancies_count', 1)}",
+                f"- الأمراض المزمنة: {', '.join(mother_profile.get('chronic_conditions', [])) or 'لا يوجد'}",
+                f"- الحساسية الدوائية: {', '.join(mother_profile.get('allergies', [])) or 'لا يوجد'}"
+            ]
+            if dynamic_memories:
+                profile_lines.extend(dynamic_memories)
+
+            context_block = "\n\n[الملف الطبي المسجل للأم]:\n" + "\n".join(profile_lines)
+            return base_prompt + context_block
+
+        return base_prompt
 
     def build_user_prompt(self, query: str, chunks: List[MockChunkInput], language: LanguageEnum) -> str:
         header_template = SOURCE_HEADER_TEMPLATES[language]
@@ -72,7 +98,38 @@ class LLMService:
         latency = round(time.time() - start_time, 3)
         answer = response.choices[0].message.content
 
-        # Extract Citation tags
+        citations = re.findall(r"\[(?:Doc|المستند):.*?,.*?,.*?\]", answer)
+        return answer, latency, citations
+
+    async def generate_chat_response(
+        self,
+        query: str,
+        chunks: list,
+        persona: UserPersonaEnum,
+        language: LanguageEnum,
+        history: list[dict],
+        mother_profile: dict | None = None,
+        dynamic_memories: list[str] | None = None
+    ) -> tuple[str, float, list[str]]:
+        system_prompt = self.build_system_prompt_with_memory(persona, language, mother_profile, dynamic_memories)
+        user_prompt = self.build_user_prompt(query, chunks, language)
+
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        for msg in history:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+            
+        messages.append({"role": "user", "content": user_prompt})
+
+        start_time = time.time()
+        response = await self.client.chat.completions.create(
+            model=self.model_id,
+            messages=messages,
+            temperature=self.temperature,
+            max_tokens=850
+        )
+        latency = round(time.time() - start_time, 3)
+        answer = response.choices[0].message.content
         citations = re.findall(r"\[(?:Doc|المستند):.*?,.*?,.*?\]", answer)
 
         return answer, latency, citations
