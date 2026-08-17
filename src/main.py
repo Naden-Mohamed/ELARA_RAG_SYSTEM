@@ -5,6 +5,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from logging import getLogger
 from routers import base_router, data_router
 from db.qdrant_vectordb import Qdrant
+from services.embedding import EmbeddingService
+
 logger = getLogger(__name__)
 
 @asynccontextmanager
@@ -13,8 +15,23 @@ async def lifespan(app: FastAPI):
     app.state.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URI)
     app.state.db_client = app.state.mongo_conn[settings.MONGODB_DB_NAME]
     logger.info("Connected to Mongodb")
+
     app.state.vectordb = Qdrant()
     await app.state.vectordb.connect()
+    await app.state.vectordb.create_collection(
+        collection_name=settings.COLLECTION_NAME,
+        embedding_size=settings.EMBEDDING_MODEL_SIZE,
+        do_reset=0,
+    )
+    logger.info("Connected to Qdrant")
+
+    app.state.embedding_service = EmbeddingService(
+        default_input_max_characters=settings.INPUT_DEFAULT_MAX_CHARACTERS,
+    )
+    app.state.embedding_service.set_embedding_model(
+        model_id=settings.EMBEDDING_MODEL_ID,
+        embedding_size=settings.EMBEDDING_MODEL_SIZE,
+    )
                                    
 
     yield

@@ -4,4 +4,4 @@ __pycache__/
 *.pyc
 *.pyo
 .python-version
-.src/data
+src/data

@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer
 import logging
 from typing import List , Union, Optional
 
-class EmbeddingService():
+class EmbeddingService:
     def __init__(self,
                  default_input_max_characters: int = 1000,
                  default_generation_max_output_tokens: int = 1000,
@@ -79,6 +79,3 @@ class EmbeddingService():
             self.logger.error(f"BGE embedding error: {e}")
             raise
 
-    def construct_prompt(self, prompt: str, role: str):
-        self.logger.error("BGE models do not support prompt construction.")
-        return None

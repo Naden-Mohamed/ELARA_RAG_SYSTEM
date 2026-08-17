@@ -1,5 +1,5 @@
 from core.config import get_settings
-from models.enums.ResponceStatusEnum import ResponseStatus
+from models.enums.ResponceStatusEnum import ResponseStatusEnums
 import os
 import random
 import string
@@ -30,12 +30,12 @@ class DocumentParserService:
 
     def validate_uploaded_file(self, file: UploadFile):
         if file.content_type not in self.settings.FILE_ALLOWED_TYPES:
-            return False, ResponseStatus.FILE_TYPE_NOT_SUPPORTED.value
+            return False, ResponseStatusEnums.FILE_TYPE_NOT_SUPPORTED.value
 
         if file.size is None or file.size > self.settings.FILE_MAX_SIZE_MB* 1024 * 1024 :
-            return False, ResponseStatus.FILE_SIZE_EXCEEDED.value
+            return False, ResponseStatusEnums.FILE_SIZE_EXCEEDED.value
         
-        return True, ResponseStatus.FILE_VALIDATED_SUCCESSFULLY.value
+        return True, ResponseStatusEnums.FILE_VALIDATED_SUCCESSFULLY.value
     def get_file_content(self, file_path: str):
         """
         Accepts a full absolute path. Returns a Docling DoclingDocument or None.
@@ -46,7 +46,7 @@ class DocumentParserService:
 
         try:
             pipeline_options = PdfPipelineOptions()
-            pipeline_options.do_ocr = True          
+            pipeline_options.do_ocr = False          
             pipeline_options.do_table_structure = True
 
             converter = DocumentConverter(

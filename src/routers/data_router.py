@@ -1,8 +1,12 @@
 from fastapi import APIRouter, UploadFile, Request, status
-from models.enums.ResponceStatusEnum import ResponseStatus
+from models.enums.ResponceStatusEnum import ResponseStatusEnums
+from models.enums.DocumentStatusEnum import DocumentStatusEnums
+from models.enums.LLMEnums import DocumentTypeEnum
 from db.document_model import DocumentModel
+from db.chunk_model import ChunkModel
 from models.api_responce import APIResponce
-from models.db_schemes.document import Document
+from models.document import Document
+from models.data_chunk import DataChunk
 from services.data_service import DocumentParserService
 from bson import ObjectId
 import logging
@@ -45,50 +49,117 @@ async def upload_file(
         doc = Document(
             _id=ObjectId(),
             doc_name=file.filename,
+            doc_path=file_path,          
             doc_type=file.content_type,
             doc_metadata={},
-            doc_size=file.size           
+            doc_size=file.size,
+            status=DocumentStatusEnums.PENDING.value,       
         )
         doc_id = await document_model.upload_document(doc=doc)
     except Exception:
         logger.exception("File upload failed")
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatus.FILE_UPLOAD_FAILED.value,
+            status=ResponseStatusEnums.FILE_UPLOAD_FAILED.value,
             error="File upload failed"
         )
 
     return APIResponce(
         status_code=status.HTTP_200_OK,
-        status=ResponseStatus.FILE_UPLOADED_SUCCESSFULLY.value,
+        status=ResponseStatusEnums.FILE_UPLOADED_SUCCESSFULLY.value,
         data={"document_id": doc_id}    # return the created ID
     )
 
 @data.post("/ingest")                    
 async def ingest_file(                   
     request: Request,
-    file_path: str
+    document_id: str
 ) -> APIResponce:
 
-    if not os.path.exists(file_path):
+    db_client = request.app.state.db_client
+    document_model = await DocumentModel.get_instance(db_client)
+
+    doc = await document_model.get_document_by_id(document_id)
+    if not doc:
         return APIResponce(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                status=ResponseStatus.NO_FILES_FOUNDED_TO_PROCESS.value,
-                error="File doesn't exist"
-                )
+            status_code=status.HTTP_404_NOT_FOUND,
+            status=ResponseStatusEnums.FILE_ID_ERROR.value,
+            error="Document not found"
+        )
+
+    if not doc.doc_path or not os.path.exists(doc.doc_path):
+        await document_model.update_status(
+            doc_id=document_id,
+            status=DocumentStatusEnums.FAILED.value,
+            error_message="Stored file missing on disk",
+        )
+        return APIResponce(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ResponseStatusEnums.NO_FILES_FOUNDED_TO_PROCESS.value,
+            error="File doesn't exist"
+        )
+
+    await document_model.update_status(
+        doc_id=document_id,
+        status=DocumentStatusEnums.PROCESSING.value,
+    )
+
     document_parser = DocumentParserService()
-    file_content = document_parser.get_file_content(file_path)
+    file_content = document_parser.get_file_content(doc.doc_path)
 
     if not file_content:
+        await document_model.update_status(
+            doc_id=document_id,
+            status=DocumentStatusEnums.FAILED.value,
+            error_message="Docling parsing returned no content",
+        )
         return APIResponce(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                status=ResponseStatus.NO_FILES_FOUNDED_TO_PROCESS.value,
-                error="No file content parsed"
-                        )
-    file_chunks = document_parser.get_chunks(document = file_content)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ResponseStatusEnums.FILE_PROCESSING_FAILED.value,
+            error="No file content parsed"
+        )
+    chunk_model = await ChunkModel.get_instance(db_client=db_client)
+    file_chunks = document_parser.get_chunks(document=file_content)
 
+    if not file_chunks:
+        await document_model.update_status(
+            doc_id=document_id,
+            status=DocumentStatusEnums.FAILED.value,
+            error_message="Chunking produced 0 chunks",
+        )
+        return APIResponce(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ResponseStatusEnums.FILE_PROCESSING_FAILED.value,
+            error="No chunks produced"
+        )
+    file_chunks_records = [
+        DataChunk(
+            _id = ObjectId(),
+            chunk_text=chunk["text"],            
+            chunk_metadata={
+                **chunk["metadata"],
+                "raw_text": chunk["raw_text"],    
+                "original_filename": doc.doc_name,
+            },
+            chunk_order=chunk["metadata"]["chunk_index"] + 1,
+            chunk_document_id =  ObjectId(document_id)
 
+        )
+        for chunk in file_chunks
+        ]
+    chunks_count = await chunk_model.insert_many_chunks(chunks = file_chunks_records)
 
+    if chunks_count == 0:
+        return APIResponce(
+            status_code=status.HTTP_204_NO_CONTENT,
+            data=chunks_count,
+            status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
+            error="No chunks inserted"
+            )
 
-
-
+    return APIResponce(
+                status_code=status.HTTP_200_OK,
+                data=chunks_count,
+                status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
+                error="Chunks returned"
+            )

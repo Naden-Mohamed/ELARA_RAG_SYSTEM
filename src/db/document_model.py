@@ -1,5 +1,5 @@
 from models.enums.DataBaseEnum import DataBaseEnums
-from models.db_schemes.document import Document
+from models.document import Document
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.errors import ConnectionFailure
 import logging
@@ -40,7 +40,41 @@ class DocumentModel:
         record = await self.collection.find_one({"doc_name": doc_name})
         if record:
             return Document(**record)
+    async def get_document_by_id(self, doc_id: str):
+        from bson.objectid import ObjectId
+        try:
+            object_id = ObjectId(doc_id)
+        except Exception:
+            return None
+        record = await self.collection.find_one({"_id": object_id})
+        if record:
+            return Document(**record)
 
+    async def update_status(
+        self,
+        doc_id: str,
+        status:str,
+        chunk_count: int | None = None,
+        error_message: str | None = None,
+        ):
+        from bson.objectid import ObjectId
+        from datetime import datetime
+
+        updated_fields: dict = {"status" : status}
+
+        if chunk_count is not None:
+            updated_fields["chunks_count"] = chunk_count
+        if error_message is not None:
+            updated_fields["error_message"] = error_message
+
+        if updated_fields["status"] in ("processed", "failed"):
+            updated_fields["updated_at"] = datetime.now()
+        
+    
+        return await self.collection.update_one(
+            {"_id": ObjectId(doc_id)},
+            {"$set": updated_fields}
+        )
 
 
 

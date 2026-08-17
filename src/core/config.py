@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     EMBEDDING_BACKEND: str ="BGE"
 
 
-    INPUT_DEFAULT_MAX_CHARACTERS: int = 1024
+    INPUT_DEFAULT_MAX_CHARACTERS: int = 6000
     GENERATION_DEFAULT_MAX_TOKENS: int = 1000
     GENERATION_DEFAULT_TEMPERATURE: float = 0.1
     TOKENIZER_MODEL_ID : str = "sentence-transformers/all-MiniLM-L6-v2"
