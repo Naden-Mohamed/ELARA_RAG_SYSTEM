@@ -12,15 +12,16 @@ logger = getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    
+    # MongoDB Connection
     app.state.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URI)
     app.state.db_client = app.state.mongo_conn[settings.MONGODB_DB_NAME]
-    logger.info("Connected to Mongodb")
-    print("Connected to Mongodb")
+    logger.info("Connected to MongoDB")
 
+    # Qdrant Connection
     app.state.vectordb = Qdrant()
     await app.state.vectordb.connect()
     
-
     await app.state.vectordb.create_collection(
         collection_name=settings.COLLECTION_NAME,
         embedding_size=settings.EMBEDDING_MODEL_SIZE,
@@ -28,6 +29,7 @@ async def lifespan(app: FastAPI):
     )
     logger.info("Connected to Qdrant")
 
+    # Embedding Service
     app.state.embedding_service = EmbeddingService(
         default_input_max_characters=settings.INPUT_DEFAULT_MAX_CHARACTERS,
     )
@@ -35,7 +37,6 @@ async def lifespan(app: FastAPI):
         model_id=settings.EMBEDDING_MODEL_ID,
         embedding_size=settings.EMBEDDING_MODEL_SIZE,
     )
-                                   
 
     yield
 
@@ -46,5 +47,5 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(base_router.base)
-app.include_router(data_router.data) 
-app.include_router(rag_router.rag) 
+app.include_router(data_router.data)
+app.include_router(rag_router.rag)
