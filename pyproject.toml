@@ -1,0 +1,21 @@
+[project]
+name = "elara-rag-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "aiofiles>=25.1.0",
+    "docling>=2.120.1",
+    "docling-core>=2.91.0",
+    "fastapi>=0.141.1",
+    "motor>=3.7.1",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.15.0",
+    "pymongo[srv]>=4.17.0",
+    "pypdf>=6.16.1",
+    "python-multipart>=0.0.32",
+    "qdrant-client>=1.19.0",
+    "sentence-transformers>=5.7.0",
+    "uvicorn>=0.52.3",
+]
