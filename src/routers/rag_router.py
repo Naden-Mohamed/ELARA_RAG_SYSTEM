@@ -1,191 +1,58 @@
 from fastapi import APIRouter, Request, status, HTTPException
-import logging
-
-from core.config import get_settings
+from fastapi.responses import HTMLResponse
 from models.api_responce import APIResponce
-from models.enums.ResponceStatusEnum import ResponseStatusEnums
-from models.enums.DocumentStatusEnum import DocumentStatusEnums
-from models.enums.DataBaseEnum import DataBaseEnums
-from models.enums.LLMEnums import DocumentTypeEnum
-from db.document_model import DocumentModel
-from db.chunk_model import ChunkModel
-from routers.schemas.data_requests import SearchRequest, PushRequest
-from models.schemas.rag_requests import (
-    QueryRequest,
-    DirectPromptTestRequest,
-    RAGResponseData,
-    RetrievedChunkDTO
+from routers.schemas.rag_requests import (
+    QueryRequest, 
+    DirectPromptTestRequest, 
+    RAGResponseData, 
+    RetrievedChunkDTO,
+    UserPersonaEnum,
+    LanguageEnum,
+    MockChunkInput
 )
 from services.llm_service import LLMService
 
-logger = logging.getLogger(__name__)
 rag = APIRouter(tags=["api/rag"], prefix="/rag")
-settings = get_settings()
 llm_service = LLMService()
 
-
-# -------------------------------------------------------------
-# 1. Indexing & Vector Search Endpoints (Updated & Compatible)
-# -------------------------------------------------------------
-
-@rag.post("/index/push")
-async def index_push(
-    request: Request,
-    push_request: PushRequest
-):
-    db_client = request.app.state.db_client
-    vectordb = request.app.state.vectordb
-    embedding_service = request.app.state.embedding_service
-    chunk_model = await ChunkModel.get_instance(db_client=db_client)
-    document_model = await DocumentModel.get_instance(db_client)
-    
-    doc = await document_model.get_document_by_id(push_request.document_id)
-    file_chunks = await chunk_model.get_document_chunks(document_id=push_request.document_id)
-    
-    texts = [c.chunk_text if hasattr(c, "chunk_text") else c["chunk_text"] for c in file_chunks]
-
-    embeddings = embedding_service.embed_text(texts, document_type=DocumentTypeEnum.DOCUMENT.value)
-
-    if embeddings is None:
-        await document_model.update_status(
-            doc_id=push_request.document_id,
-            status=DocumentStatusEnums.FAILED.value,
-            error_message="Embedding step failed",
-        )
-        return APIResponce(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
-            error="Embedding failed"
-        )
-
-    metadatas = [
-        {
-            **(c.chunk_metadata if hasattr(c, "chunk_metadata") else c.get("metadata", {})),
-            "document_id": push_request.document_id,
-            "doc_name": doc.doc_name if doc else None
-        }
-        for c in file_chunks
-    ]
-
-    inserted = await vectordb.insert_many(
-        collection_name=settings.COLLECTION_NAME,
-        texts=texts,
-        vectors=[vec.tolist() if hasattr(vec, "tolist") else vec for vec in embeddings],
-        metadatas=metadatas,
+MOCK_BENCHMARK_CHUNKS = [
+    MockChunkInput(
+        chunk_id="chunk_01",
+        doc_name="WHO_MNH_Care_2025.pdf",
+        page_number=4,
+        section="Recommendation 1. Birth Preparedness",
+        text="A Birth Preparedness and Complication Readiness (BPCR) plan includes: desired birth location, identifying emergency transport, saving funds, and selecting a continuous birth companion."
+    ),
+    MockChunkInput(
+        chunk_id="chunk_02",
+        doc_name="WHO_MNH_Care_2025.pdf",
+        page_number=8,
+        section="Recommendation 8. Labour Companionship",
+        text="Continuous companionship during labour improves clinical outcomes and maternal satisfaction. Companions provide emotional and practical support."
     )
+]
 
-    if not inserted:
-        await document_model.update_status(
-            doc_id=push_request.document_id,
-            status=DocumentStatusEnums.FAILED.value,
-            error_message="Qdrant insert failed",
-        )
-        return APIResponce(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
-            error="Failed to store vectors"
-        )
-
-    await document_model.update_status(
-        doc_id=push_request.document_id,
-        status=DocumentStatusEnums.PROCESSED.value,
-        chunk_count=len(file_chunks),
-    )
-
-    return APIResponce(
-        status_code=status.HTTP_200_OK,
-        status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
-        data={"document_id": push_request.document_id, "chunk_count": len(file_chunks)}
-    )
-
-
-@rag.post("/index/info")
-async def get_index_info(
-    request: Request,
-    document_id: str
-):
-    db_client = request.app.state.db_client
-    vectordb = request.app.state.vectordb
-    document_model = await DocumentModel.get_instance(db_client)
-
-    info = await vectordb.get_collection_info(settings.COLLECTION_NAME)
-
-    if not info:
-        await document_model.update_status(
-            doc_id=document_id,
-            status=DocumentStatusEnums.FAILED.value,
-            error_message="no info retrieved",
-        )
-        return APIResponce(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
-            error="Failed to get_collection_info"
-        )
-
-    await document_model.update_status(
-        doc_id=document_id,
-        status=DocumentStatusEnums.PROCESSED.value,
-    )
-
-    return APIResponce(
-        status_code=status.HTTP_200_OK,
-        status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
-        data={"document_id": document_id, "index_info": str(info)}
-    )
-
-
-@rag.post("/index/search")
-async def search_by_vector(
-    request: Request,
-    search_request: SearchRequest
-):
-    vectordb = request.app.state.vectordb
-    embedding_service = request.app.state.embedding_service
-    query_embeddings = embedding_service.embed_text(search_request.text, document_type=DocumentTypeEnum.QUERY.value)
-
-    results = await vectordb.search_by_vector(
-        collection_name=settings.COLLECTION_NAME,
-        vector=query_embeddings[0].tolist() if hasattr(query_embeddings[0], "tolist") else query_embeddings[0],
-        top_k=search_request.limit if hasattr(search_request, "limit") else 5
-    )
-
-    if results is None:
-        return APIResponce(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
-            error="No search results"
-        )
-
-    return APIResponce(
-        status_code=status.HTTP_200_OK,
-        status=ResponseStatusEnums.VECTORDB_SEARCH_SUCCESS.value,
-        data={"search_results": results}
-    )
-
-
-# -------------------------------------------------------------
-# 2. LLM Direct Testing & End-to-End Generation Endpoints
-# -------------------------------------------------------------
-
-@rag.post("/direct-generate", response_model=APIResponce)
-async def test_llm_direct_prompt(request_payload: DirectPromptTestRequest):
-    """Directly tests LLM generation & persona prompt without running vector search."""
+# JSON Endpoint to test direct LLM generation
+@rag.post("/test-prompt", response_model=APIResponce)
+async def test_llm_prompt_endpoint(payload: DirectPromptTestRequest):
     try:
-        messages = llm_service.build_rag_messages(
-            query=request_payload.query,
-            context_chunks=request_payload.context_chunks or ["No context passed for direct prompt evaluation."],
-            persona=request_payload.persona
+        chunks_to_use = payload.context_chunks or MOCK_BENCHMARK_CHUNKS
+        answer, latency, citations = await llm_service.generate_rag_response(
+            query=payload.query,
+            chunks=chunks_to_use,
+            persona=payload.persona,
+            language=payload.language
         )
-        answer, latency = await llm_service.generate_response(messages)
-
         return APIResponce(
             status_code=status.HTTP_200_OK,
             status="success",
             data={
-                "persona": request_payload.persona.value,
+                "query": payload.query,
+                "persona": payload.persona.value,
+                "language": payload.language.value,
                 "answer": answer,
                 "latency_seconds": latency,
-                "raw_messages": messages
+                "citations": citations
             }
         )
     except Exception as e:
@@ -195,73 +62,146 @@ async def test_llm_direct_prompt(request_payload: DirectPromptTestRequest):
             error=str(e)
         )
 
+# Interactive Web UI to test and view Arabic/English outputs
+@rag.get("/playground", response_class=HTMLResponse)
+async def rag_playground_ui():
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="ar">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ELARA LLM & Persona Playground</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body { background: #f8fafc; font-family: system-ui, -apple-system, sans-serif; padding: 30px; }
+            .card { border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+            .badge-persona { font-size: 13px; padding: 6px 12px; }
+            .citation-tag { background: #e0f2fe; color: #0369a1; border-radius: 4px; padding: 2px 6px; font-size: 12px; font-weight: 600; display: inline-block; margin: 2px; }
+            .output-box { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 18px; line-height: 1.8; white-space: pre-wrap; }
+            .rtl { direction: rtl; text-align: right; }
+            .ltr { direction: ltr; text-align: left; }
+        </style>
+    </head>
+    <body>
+        <div class="container-fluid" style="max-width: 1000px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">ELARA LLM Persona & Clinical Verification Playground</h2>
+                    <p class="text-secondary mb-0">اختبار استجابات الذكاء الاصطناعي مع دعم اللغة العربية/الإنجليزية وفصل نبرة الخطاب</p>
+                </div>
+            </div>
 
-@rag.post("/query", response_model=APIResponce)
-async def rag_query(request: Request, payload: QueryRequest):
-    """End-to-End RAG: Vector search in Qdrant -> Prompt Construction -> LLM Generation."""
-    vectordb = request.app.state.vectordb
-    embedding_service = request.app.state.embedding_service
+            <div class="card p-4 mb-4">
+                <form id="evalForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">الجمهور المستهدف (Persona)</label>
+                            <select id="persona" class="form-select">
+                                <option value="doctor">طبيب / ممارس صحي (Doctor)</option>
+                                <option value="mother">أم / أسرة (Mother / Caregiver)</option>
+                                <option value="general">عام (General)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">اللغة (Language)</label>
+                            <select id="language" class="form-select">
+                                <option value="ar">العربية (Arabic)</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">السؤال الطبي (Query)</label>
+                            <input type="text" id="query" class="form-control" placeholder="اكتبي السؤال هنا..." value="ما هي العناصر الأساسية لخطة الاستعداد للولادة ومضاعفاتها؟" required>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnSubmit">توليد الرد وفحص الـ Citations</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
 
-    # 1. Embed query
-    query_vector = embedding_service.embed_text(
-        text=payload.query,
-        document_type=DocumentTypeEnum.QUERY.value
-    )
-    if query_vector is None:
-        raise HTTPException(status_code=500, detail="Failed to generate query embedding.")
+            <div id="resultCard" class="card p-4 d-none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">النتيجة المولدة</h5>
+                    <div>
+                        <span id="resPersona" class="badge bg-primary badge-persona me-1"></span>
+                        <span id="resLang" class="badge bg-secondary badge-persona me-1"></span>
+                        <span id="resLatency" class="badge bg-light text-dark badge-persona border"></span>
+                    </div>
+                </div>
+                
+                <div id="resAnswer" class="output-box mb-3"></div>
 
-    # 2. Retrieve from Qdrant
-    hits = await vectordb.search_by_vector(
-        collection_name=settings.COLLECTION_NAME,
-        vector=query_vector[0].tolist() if hasattr(query_vector[0], "tolist") else query_vector[0],
-        top_k=payload.top_k
-    )
+                <div id="citationsContainer">
+                    <h6 class="fw-bold text-muted mb-2">الاستشهادات الموثقة (Extracted Citations):</h6>
+                    <div id="citationsList"></div>
+                </div>
+            </div>
+        </div>
 
-    if not hits:
-        return APIResponce(
-            status_code=status.HTTP_200_OK,
-            status="success",
-            data={"answer": "No relevant documents found.", "retrieved_chunks": []}
-        )
+        <script>
+            document.getElementById('evalForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btnSubmit');
+                const resultCard = document.getElementById('resultCard');
+                const query = document.getElementById('query').value;
+                const persona = document.getElementById('persona').value;
+                const language = document.getElementById('language').value;
 
-    retrieved_dtos: list[RetrievedChunkDTO] = []
-    context_chunks: list[str] = []
+                btn.disabled = true;
+                btn.innerText = "جاري التوليد...";
+                resultCard.classList.add('d-none');
 
-    # Map Qdrant points to DTOs
-    for hit in hits:
-        payload_dict = hit.payload or {}
-        chunk_text = payload_dict.get("text", "")
-        context_chunks.append(chunk_text)
+                try {
+                    const res = await fetch('/rag/test-prompt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: query,
+                            persona: persona,
+                            language: language,
+                            context_chunks: []
+                        })
+                    });
+                    const resData = await res.json();
+                    
+                    if (resData.status_code === 200) {
+                        const data = resData.data;
+                        const ansEl = document.getElementById('resAnswer');
+                        ansEl.innerText = data.answer;
+                        ansEl.className = 'output-box mb-3 ' + (data.language === 'ar' ? 'rtl' : 'ltr');
 
-        meta = payload_dict.get("metadata", {})
-        retrieved_dtos.append(
-            RetrievedChunkDTO(
-                chunk_id=str(hit.id),
-                doc_name=payload_dict.get("doc_name", "Unknown"),
-                text=chunk_text,
-                score=round(hit.score, 4) if hasattr(hit, "score") else 0.0,
-                page_numbers=meta.get("page_numbers", []),
-                section_headings=meta.get("section_headings", [])
-            )
-        )
+                        document.getElementById('resPersona').innerText = data.persona.toUpperCase();
+                        document.getElementById('resLang').innerText = data.language.toUpperCase();
+                        document.getElementById('resLatency').innerText = data.latency_seconds + 's';
 
-    # 3. Generate Answer
-    messages = llm_service.build_rag_messages(
-        query=payload.query,
-        context_chunks=context_chunks,
-        persona=payload.persona
-    )
-    answer, latency = await llm_service.generate_response(messages)
+                        const citDiv = document.getElementById('citationsList');
+                        citDiv.innerHTML = '';
+                        if (data.citations && data.citations.length > 0) {
+                            data.citations.forEach(c => {
+                                const span = document.createElement('span');
+                                span.className = 'citation-tag';
+                                span.innerText = c;
+                                citDiv.appendChild(span);
+                            });
+                        } else {
+                            citDiv.innerHTML = '<span class="text-muted small">لا توجد استشهادات أو الإجابة خارج السياق.</span>';
+                        }
 
-    response_payload = RAGResponseData(
-        answer=answer,
-        persona_applied=payload.persona.value,
-        retrieved_chunks=retrieved_dtos,
-        latency_seconds=latency
-    )
-
-    return APIResponce(
-        status_code=status.HTTP_200_OK,
-        status="success",
-        data=response_payload.dict()
-    )
+                        resultCard.classList.remove('d-none');
+                    } else {
+                        alert("Error: " + (resData.error || "Generation failed"));
+                    }
+                } catch (err) {
+                    alert("Network Error: " + err);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = "توليد الرد وفحص الـ Citations";
+                }
+            });
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
