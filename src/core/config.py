@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     FILE_ALLOWED_TYPES: List[str] = ["text/plain", "application/pdf",".docx"]
     FILE_MAX_SIZE_MB: int = 10
     FILE_DEFAULT_CHUNK_SIZE: int = 512000 # 512 KB
-     
+    USE_SIMPLE_CHUNKER: bool = True
         
     GROQ_API_KEY: str = ""
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"

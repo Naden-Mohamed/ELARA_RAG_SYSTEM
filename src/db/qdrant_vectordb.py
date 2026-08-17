@@ -33,7 +33,7 @@ class Qdrant():
 
     async def connect(self):
         try:
-            self.client = await AsyncQdrantClient(url = self.url, api_key= self.api_key, check_compatibility=False)
+            self.client =  AsyncQdrantClient(url = self.url, api_key= self.api_key, check_compatibility=False)
             self.logger.info("Qdrant client is connected")
             print("Qdrant client is connected")
         except Exception as e:

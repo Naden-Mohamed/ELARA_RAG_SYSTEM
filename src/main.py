@@ -19,13 +19,7 @@ async def lifespan(app: FastAPI):
 
     app.state.vectordb = Qdrant()
     await app.state.vectordb.connect()
-    
 
-    await app.state.vectordb.create_collection(
-        collection_name=settings.COLLECTION_NAME,
-        embedding_size=settings.EMBEDDING_MODEL_SIZE,
-        do_reset=0,
-    )
     logger.info("Connected to Qdrant")
 
     app.state.embedding_service = EmbeddingService(

@@ -14,7 +14,7 @@ import os
 logger = logging.getLogger(__name__)
 rag = APIRouter(tags=["api/rag"], prefix="/rag")
 settings = get_settings()
-@rag.post("/index/push")                    
+@rag.post("/push")                    
 async def index_push(                   
     request: Request,
     push_request: PushRequest):
@@ -25,10 +25,12 @@ async def index_push(
     chunk_model = await ChunkModel.get_instance(db_client=db_client)
     document_model = await DocumentModel.get_instance(db_client)
     doc = await document_model.get_document_by_id(push_request.document_id)
-
+    print(f"doc{doc}")
+    
     file_chunks = await chunk_model.get_document_chunks(document_id=push_request.document_id)
+    print(f"file_chunks {file_chunks}")
     texts = [c.chunk_text for c in file_chunks]
-
+    print(f"return {texts}")
     embeddings = embedding_service.embed_text(texts, document_type=DocumentTypeEnum.DOCUMENT.value)
 
     if embeddings is None:
@@ -51,7 +53,7 @@ async def index_push(
     ]
 
     inserted = await vectordb.insert_many(
-        collection_name=settings.COLLECTION_NAME,
+        collection_name=DataBaseEnums.DOCUMENTS_COLLECTION.value,
         texts=texts,
         vectors=[vec.tolist() for vec in embeddings],
         metadatas=metadatas,
@@ -81,7 +83,7 @@ async def index_push(
         data={"document_id": push_request.document_id, "chunk_count": len(file_chunks)}
     )
 
-@rag.post("/index/info")                    
+@rag.post("/info")                    
 async def get_index_info(                   
     request: Request,
     document_id:str):
@@ -118,7 +120,7 @@ async def get_index_info(
     )
 
 
-@rag.post("/index/search")                    
+@rag.post("/search")                    
 async def search_by_vector(                   
     request: Request,
      search_request: SearchRequest):

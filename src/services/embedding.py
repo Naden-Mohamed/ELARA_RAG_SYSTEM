@@ -28,6 +28,7 @@ class EmbeddingService:
                 trust_remote_code=True  # required for BAAI/bge-multilingual-gemma2
             )
             self.logger.info(f"BGE model '{model_id}' loaded successfully.")
+            print(f"BGE model '{model_id}' loaded successfully.")
         except Exception as e:
             self.logger.error(f"Failed to load BGE model '{model_id}': {e}")
             self.client = None
@@ -56,6 +57,7 @@ class EmbeddingService:
 
         try:
             text = [self.process_text(t) for t in text]
+            print(text)
 
             # bge-multilingual-gemma2 uses instruction-based embedding
             # document_type differentiates query vs passage for better accuracy

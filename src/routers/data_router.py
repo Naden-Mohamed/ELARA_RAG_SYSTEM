@@ -104,22 +104,28 @@ async def ingest_file(
         status=DocumentStatusEnums.PROCESSING.value,
     )
 
-    document_parser = DocumentParserService()
-    file_content = document_parser.get_file_content(doc.doc_path)
+    # document_parser = DocumentParserService()
+    # file_content = document_parser.get_file_content(doc.doc_path)
 
-    if not file_content:
-        await document_model.update_status(
-            doc_id=document_id,
-            status=DocumentStatusEnums.FAILED.value,
-            error_message="Docling parsing returned no content",
-        )
-        return APIResponce(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatusEnums.FILE_PROCESSING_FAILED.value,
-            error="No file content parsed"
-        )
-    chunk_model = await ChunkModel.get_instance(db_client=db_client)
-    file_chunks = document_parser.get_chunks(document=file_content)
+    # if not file_content:
+    #     await document_model.update_status(
+    #         doc_id=document_id,
+    #         status=DocumentStatusEnums.FAILED.value,
+    #         error_message="Docling parsing returned no content",
+    #     )
+    #     return APIResponce(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         status=ResponseStatusEnums.FILE_PROCESSING_FAILED.value,
+    #         error="No file content parsed"
+    #     )
+
+    # if settings.USE_SIMPLE_CHUNKER:
+    from services.simple_chunker import SimpleChunker
+    file_chunks = SimpleChunker().chunk(doc.doc_path)
+    # else:
+    #     file_content = document_parser.get_file_content(doc.doc_path)
+    #     file_chunks = document_parser.get_chunks(file_content)
+
 
     if not file_chunks:
         await document_model.update_status(
@@ -138,15 +144,17 @@ async def ingest_file(
             chunk_text=chunk["text"],            
             chunk_metadata={
                 **chunk["metadata"],
-                "raw_text": chunk["raw_text"],    
+                # "raw_text": chunk["raw_text"],    
                 "original_filename": doc.doc_name,
             },
-            chunk_order=chunk["metadata"]["chunk_index"] + 1,
+            chunk_order=chunk["metadata"]["chunk_order"] + 1,
             chunk_document_id =  ObjectId(document_id)
 
         )
         for chunk in file_chunks
         ]
+
+    chunk_model = await ChunkModel.get_instance(db_client=db_client)
     chunks_count = await chunk_model.insert_many_chunks(chunks = file_chunks_records)
 
     if chunks_count == 0:

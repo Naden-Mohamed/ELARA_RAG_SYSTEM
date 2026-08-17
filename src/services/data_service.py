@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class DocumentParserService:
     def __init__(self) -> None:
         self.settings = get_settings()
-        self.base_dir = os.path.dirname(os.path.dirname(__file__))
+        self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.files_path = os.path.join(self.base_dir, "data")
 
     def generate_unique_filename(self, original_filename:str | None, lenght:int = 5):
