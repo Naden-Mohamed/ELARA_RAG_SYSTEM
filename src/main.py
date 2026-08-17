@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from core.config import get_settings
 from motor.motor_asyncio import AsyncIOMotorClient
 from logging import getLogger
-from routers import base_router, data_router
+from routers import base_router, data_router, rag_router
 from db.qdrant_vectordb import Qdrant
 from services.embedding import EmbeddingService
 
@@ -44,3 +44,4 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(base_router.base)
 app.include_router(data_router.data) 
+app.include_router(rag_router.rag) 

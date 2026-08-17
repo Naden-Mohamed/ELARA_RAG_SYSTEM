@@ -17,23 +17,23 @@ settings = get_settings()
 @rag.post("/index/push")                    
 async def index_push(                   
     request: Request,
-    document_id:str):
+    push_request: PushRequest):
 
     db_client = request.app.state.db_client
     vectordb = request.app.state.vectordb
     embedding_service = request.app.state.embedding_service 
     chunk_model = await ChunkModel.get_instance(db_client=db_client)
     document_model = await DocumentModel.get_instance(db_client)
-    doc = await document_model.get_document_by_id(document_id)
+    doc = await document_model.get_document_by_id(push_request.document_id)
 
-    file_chunks = await chunk_model.get_document_chunks(document_id=document_id)
-    texts = [c["chunk_text"] for c in file_chunks]
+    file_chunks = await chunk_model.get_document_chunks(document_id=push_request.document_id)
+    texts = [c.chunk_text for c in file_chunks]
 
     embeddings = embedding_service.embed_text(texts, document_type=DocumentTypeEnum.DOCUMENT.value)
 
     if embeddings is None:
         await document_model.update_status(
-            doc_id=document_id,
+            doc_id=push_request.document_id,
             status=DocumentStatusEnums.FAILED.value,
             error_message="Embedding step failed",
         )
@@ -46,7 +46,7 @@ async def index_push(
     # every chunk carries document_id back to Mongo, so a document can be
     # looked up, deleted, or re-ingested without orphaning vectors in Qdrant
     metadatas = [
-        {**c["metadata"], "document_id": document_id, "doc_name": doc.doc_name}
+        {**c.chunk_metadata, "document_id": push_request.document_id, "doc_name": doc.doc_name if doc else None}
         for c in file_chunks
     ]
 
@@ -59,7 +59,7 @@ async def index_push(
 
     if not inserted:
         await document_model.update_status(
-            doc_id=document_id,
+            doc_id=push_request.document_id,
             status=DocumentStatusEnums.FAILED.value,
             error_message="Qdrant insert failed",
         )
@@ -70,7 +70,7 @@ async def index_push(
         )
 
     await document_model.update_status(
-        doc_id=document_id,
+        doc_id=push_request.document_id,
         status=DocumentStatusEnums.PROCESSED.value,
         chunk_count=len(file_chunks),
     )
@@ -78,7 +78,7 @@ async def index_push(
     return APIResponce(
         status_code=status.HTTP_200_OK,
         status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
-        data={"document_id": document_id, "chunk_count": len(file_chunks)}
+        data={"document_id": push_request.document_id, "chunk_count": len(file_chunks)}
     )
 
 @rag.post("/index/info")                    
@@ -127,7 +127,7 @@ async def search_by_vector(
     embedding_service = request.app.state.embedding_service 
     query_embeddings = embedding_service.embed_text(search_request.text, document_type=DocumentTypeEnum.QUERY.value)
 
-    results = await vectordb.search_by_vector(DataBaseEnums.DATA_CHUNKS_COLLECTION,query_embeddings,5 )
+    results = await vectordb.search_by_vector(DataBaseEnums.DATA_CHUNKS_COLLECTION.value,query_embeddings[0],5 )
 
     if not results:
         return APIResponce(

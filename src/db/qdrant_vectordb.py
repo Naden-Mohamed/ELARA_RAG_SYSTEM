@@ -46,37 +46,37 @@ class Qdrant():
         else:
             self.logger.warning("No active connection to disconnect from Qdrant database.")
 
-    def is_collection_exists(self,collection_name: str ):
+    async def is_collection_exists(self,collection_name: str ):
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
         else:
-            return self.client.collection_exists(collection_name=collection_name)
+            return await self.client.collection_exists(collection_name=collection_name)
 
-    def get_collection_info(self, collection_name: str):
-        if self.client and self.is_collection_exists(collection_name=collection_name):
-            return self.client.get_collection(collection_name=collection_name)
+    async def get_collection_info(self, collection_name: str):
+        if self.client and await self.is_collection_exists(collection_name=collection_name):
+            return await self.client.get_collection(collection_name=collection_name)
         else:
             self.logger.warning("Not connected to client or this collection doesn't exist .")
 
-    def get_collections(self):
+    async def get_collections(self):
         if self.client:
-            return self.client.get_collections()
+            return await self.client.get_collections()
         
-    def delete_collection(self, collection_name: str):
+    async def delete_collection(self, collection_name: str):
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
         else:
-            return self.client.delete_collection(collection_name=collection_name)       
+            return await self.client.delete_collection(collection_name=collection_name)       
     async def create_collection(self, collection_name: str, embedding_size:int, do_reset: int):
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
         
-        if self.is_collection_exists(collection_name=collection_name):
+        if await self.is_collection_exists(collection_name=collection_name):
             if do_reset:
-                self.delete_collection(collection_name=collection_name)
+                await self.delete_collection(collection_name=collection_name)
                 self.logger.info("do_reset is 1, collection {collection_name} deleted")
             else:
                 self.logger.info(f"Collection '{collection_name}' already exists, skipping creation.")
@@ -101,7 +101,7 @@ class Qdrant():
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
         
-        if not self.is_collection_exists(collection_name=collection_name):
+        if not await self.is_collection_exists(collection_name=collection_name):
             self.logger.error("Collection {collection_name} doesn't exist")
             return False
         if record_id is None:
@@ -132,7 +132,7 @@ class Qdrant():
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
         
-        if not self.is_collection_exists(collection_name=collection_name):
+        if not await self.is_collection_exists(collection_name=collection_name):
             self.logger.error("Collection {collection_name} doesn't exist")
             return False
 
@@ -173,7 +173,7 @@ class Qdrant():
 
         return True
 
-    def search_by_vector(self, collection_name:str, vector: list, top_k: int = 5):
+    async def search_by_vector(self, collection_name:str, vector: list, top_k: int = 5):
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
@@ -183,7 +183,7 @@ class Qdrant():
             return False
 
         try:
-            search_result = self.client.query_points(
+            search_result = await self.client.query_points(
                 collection_name=collection_name,
                 query=vector,
                 limit=top_k

@@ -63,12 +63,12 @@ class DocumentModel:
         updated_fields: dict = {"status" : status}
 
         if chunk_count is not None:
-            updated_fields["chunks_count"] = chunk_count
+            updated_fields["chunk_count"] = chunk_count
         if error_message is not None:
             updated_fields["error_message"] = error_message
 
         if updated_fields["status"] in ("processed", "failed"):
-            updated_fields["updated_at"] = datetime.now()
+            updated_fields["processed_at"] = datetime.now()
         
     
         return await self.collection.update_one(
