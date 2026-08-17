@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     COLLECTION_NAME: str = "ELARA"
 
     QDRANT_API_KEY: str = ""
-    QDRANT_URL: str ="localhost:6333"
+    QDRANT_URL: str =""
 
     FILE_ALLOWED_TYPES: List[str] = ["text/plain", "application/pdf",".docx"]
     FILE_MAX_SIZE_MB: int = 10

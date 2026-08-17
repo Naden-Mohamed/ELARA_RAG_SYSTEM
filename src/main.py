@@ -15,9 +15,12 @@ async def lifespan(app: FastAPI):
     app.state.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URI)
     app.state.db_client = app.state.mongo_conn[settings.MONGODB_DB_NAME]
     logger.info("Connected to Mongodb")
+    print("Connected to Mongodb")
 
     app.state.vectordb = Qdrant()
     await app.state.vectordb.connect()
+    
+
     await app.state.vectordb.create_collection(
         collection_name=settings.COLLECTION_NAME,
         embedding_size=settings.EMBEDDING_MODEL_SIZE,

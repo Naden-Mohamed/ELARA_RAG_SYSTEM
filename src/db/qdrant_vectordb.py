@@ -33,8 +33,9 @@ class Qdrant():
 
     async def connect(self):
         try:
-            self.client = AsyncQdrantClient(url = self.url, api_key= self.api_key, check_compatibility=False)
+            self.client = await AsyncQdrantClient(url = self.url, api_key= self.api_key, check_compatibility=False)
             self.logger.info("Qdrant client is connected")
+            print("Qdrant client is connected")
         except Exception as e:
             self.logger.error("Cannot connect to qdrant")
             self.client = None
@@ -89,6 +90,7 @@ class Qdrant():
                     size=embedding_size,
                     distance= self.distance_metric
                 ))
+            print(f"Collection '{collection_name}' created with size {embedding_size}.")
             self.logger.info(f"Collection '{collection_name}' created with size {embedding_size}.")
             return True
         
