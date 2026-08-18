@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request, Depends, status, Query
 from pydantic import BaseModel
+import requests
 
 from models.api_responce import APIResponce
 from routers.auth_router import get_current_user
 from routers.schemas.rag_requests import UserPersonaEnum, LanguageEnum, MockChunkInput
-from routers.schemas.chat_schemas import ChatHistoryResponse, ChatSummaryDTO
 from db.chat_model import ChatModel
 from services.llm_service import LLMService
 
@@ -28,26 +28,58 @@ async def send_chat_message(
     chat_model = ChatModel(db)
     user_id = str(current_user["_id"])
     
-    # Resolve Chat & Short-Term Memory
     chat_id = payload.chat_id or await chat_model.get_or_create_chat(user_id)
     recent_history = await chat_model.get_recent_messages(chat_id, limit=6)
     
-    # Resolve Long-Term Memory
     mother_profile = current_user.get("mother_profile")
     dynamic_memories = await chat_model.get_active_clinical_memory(user_id)
     
-    # Dummy Chunks (or real Vector Search hits)
-    chunks = [
-        MockChunkInput(
-            chunk_id="chk_1",
-            doc_name="WHO_MNH_Care_2025.pdf",
-            page_number=5,
-            section="Hypertension in Pregnancy",
-            text="Pre-eclampsia warning signs include severe persistent headache, visual disturbances, and epigastric pain."
-        )
-    ]
+    chunks = []
+    try:
+        base_url = str(request.base_url).rstrip("/")
+        search_payload = {
+            "text": payload.query,
+            "limit": 5
+        }
+        
+        response = requests.post(f"{base_url}/rag/search", json=search_payload, timeout=30)
+        
+        if response.status_code == 200:
+            res_json = response.json()
+            if res_json and "data" in res_json:
+                search_data = res_json["data"].get("search_results", {})
+                points = search_data.get("points", []) if isinstance(search_data, dict) else search_data
+                
+                for point in points:
+                    p_load = point.get("payload", {})
+                    page_nums = p_load.get("page_numbers", [1])
+                    page_num = page_nums[0] if isinstance(page_nums, list) and page_nums else 1
+                    sections = p_load.get("section_headings", [])
+                    section_title = sections[0] if isinstance(sections, list) and sections else "General Recommendations"
 
-    # Generate LLM Response with Memory Injection
+                    chunks.append(
+                        MockChunkInput(
+                            chunk_id=str(point.get("id", "chk_real")),
+                            doc_name=p_load.get("doc_name") or p_load.get("original_filename", "WHO_Guidelines.pdf"),
+                            page_number=page_num,
+                            section=section_title,
+                            text=p_load.get("text", "")
+                        )
+                    )
+    except Exception as e:
+        print(f"Error calling internal rag search endpoint: {e}")
+        
+    if not chunks:
+        chunks = [
+            MockChunkInput(
+                chunk_id="chk_fallback",
+                doc_name="WHO_Guidelines.pdf",
+                page_number=1,
+                section="General",
+                text="No matching content was found in the available medical documents."
+            )
+        ]
+
     answer, latency, citations = await llm_service.generate_chat_response(
         query=payload.query,
         chunks=chunks,
@@ -58,7 +90,6 @@ async def send_chat_message(
         dynamic_memories=dynamic_memories
     )
 
-    # Persist Interaction to MongoDB
     await chat_model.add_message(chat_id, user_id, "user", payload.query)
     await chat_model.add_message(chat_id, user_id, "assistant", answer, citations, latency)
 
@@ -79,7 +110,6 @@ async def list_user_chats(
     request: Request,
     current_user: dict = Depends(get_current_user)
 ):
-    """Retrieves all active chat sessions belonging to the authenticated user."""
     db = request.app.state.db_client
     chat_model = ChatModel(db)
     user_id = str(current_user["_id"])
@@ -100,7 +130,6 @@ async def get_chat_history(
     page_size: int = Query(default=20, ge=1, le=100, description="Number of messages per request"),
     current_user: dict = Depends(get_current_user)
 ):
-    """Retrieves paginated message history for a specific chat session."""
     db = request.app.state.db_client
     chat_model = ChatModel(db)
     user_id = str(current_user["_id"])

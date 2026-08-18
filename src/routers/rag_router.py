@@ -3,18 +3,15 @@ import logging
 from fastapi import APIRouter, Request, status, HTTPException
 from fastapi.responses import HTMLResponse
 
-# Models & Enums
 from models.api_responce import APIResponce
 from models.enums.ResponceStatusEnum import ResponseStatusEnums
 from models.enums.DocumentStatusEnum import DocumentStatusEnums
 from models.enums.DataBaseEnum import DataBaseEnums
 from models.enums.LLMEnums import DocumentTypeEnum
 
-# DB Models
 from db.document_model import DocumentModel
 from db.chunk_model import ChunkModel
 
-# Schemas
 from routers.schemas.data_requests import SearchRequest, PushRequest
 from routers.schemas.rag_requests import (
     QueryRequest, 
@@ -26,7 +23,6 @@ from routers.schemas.rag_requests import (
     MockChunkInput
 )
 
-# Services & Config
 from services.llm_service import LLMService
 from core.config import get_settings
 
@@ -51,10 +47,6 @@ MOCK_BENCHMARK_CHUNKS = [
         text="Continuous companionship during labour improves clinical outcomes and maternal satisfaction. Companions provide emotional and practical support."
     )
 ]
-
-# -------------------------------------------------------------
-# Vector DB Operations (Push, Info, Search)
-# -------------------------------------------------------------
 
 @rag.post("/push")                    
 async def index_push(                   
@@ -143,6 +135,7 @@ async def index_push(
             status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
             error=str(e)
         )
+
 @rag.post("/info")                    
 async def get_index_info(                   
     request: Request,
@@ -178,7 +171,6 @@ async def get_index_info(
         data={"document_id": document_id, "index_info": info}
     )
 
-
 @rag.post("/search")                    
 async def search_by_vector(                   
     request: Request,
@@ -207,14 +199,45 @@ async def search_by_vector(
         data={"search_results": results}
     )
 
-# -------------------------------------------------------------
-# LLM Generation & Verification Endpoints
-# -------------------------------------------------------------
-
 @rag.post("/test-prompt", response_model=APIResponce)
-async def test_llm_prompt_endpoint(payload: DirectPromptTestRequest):
+async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRequest):
     try:
-        chunks_to_use = payload.context_chunks or MOCK_BENCHMARK_CHUNKS
+        chunks_to_use = payload.context_chunks
+        
+        if not chunks_to_use:
+            vectordb = request.app.state.vectordb
+            embedding_service = request.app.state.embedding_service
+            query_embeddings = embedding_service.embed_text(payload.query, document_type=DocumentTypeEnum.QUERY.value)
+            
+            # Fixed here: passed limit value directly without keyword argument 'limit='
+            search_results = await vectordb.search_by_vector(
+                DataBaseEnums.DOCUMENTS_COLLECTION.value,
+                query_embeddings[0],
+                5
+            )
+            
+            if search_results and isinstance(search_results, list):
+                chunks_to_use = []
+                for res in search_results:
+                    p_load = res.get("payload", {})
+                    page_nums = p_load.get("page_numbers", [1])
+                    page_num = page_nums[0] if isinstance(page_nums, list) and page_nums else 1
+                    sections = p_load.get("section_headings", [])
+                    section_title = sections[0] if isinstance(sections, list) and sections else "General Recommendations"
+
+                    chunks_to_use.append(
+                        MockChunkInput(
+                            chunk_id=str(res.get("id", "chk_real")),
+                            doc_name=p_load.get("doc_name") or p_load.get("original_filename", "WHO_Guidelines.pdf"),
+                            page_number=page_num,
+                            section=section_title,
+                            text=p_load.get("text", "")
+                        )
+                    )
+        
+        if not chunks_to_use:
+            chunks_to_use = MOCK_BENCHMARK_CHUNKS
+
         answer, latency, citations = await llm_service.generate_rag_response(
             query=payload.query,
             chunks=chunks_to_use,
@@ -239,7 +262,6 @@ async def test_llm_prompt_endpoint(payload: DirectPromptTestRequest):
             status="failed",
             error=str(e)
         )
-
 
 @rag.get("/playground", response_class=HTMLResponse)
 async def rag_playground_ui():
