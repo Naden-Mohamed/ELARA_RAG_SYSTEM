@@ -1,3 +1,4 @@
+<<<<<<< HEAD:src/evaluation/retrieval/results/eval_metrics.csv
 run_id,timestamp,chunk_config,embedding_model,top_k,query_id,query,is_failure_case,failure_mode,precision_at_k,relevant_count,reciprocal_rank,retrieved_ranks,retrieved_chunks_json
 RUN_20260818_053235,2026-08-18T05:32:36.035741,docling_hierarchical_512,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,3,q1,What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?,False,,0.0,0,0.0,[],[]
 RUN_20260818_053235,2026-08-18T05:32:36.594198,docling_hierarchical_512,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,3,q2,What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?,False,,0.0,0,0.0,[],[]
@@ -143,3 +144,5 @@ RUN_20260818_053235,2026-08-18T05:33:14.959324,sentence_chunker_300,sentence-tra
 RUN_20260818_053235,2026-08-18T05:33:15.130491,sentence_chunker_300,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,10,f2,What were the statistical results of the trial conducted in Nepal?,True,Ambiguous Query / Entity Disambiguation Failure,0.0,0,0.0,[],[]
 RUN_20260818_053235,2026-08-18T05:33:15.298108,sentence_chunker_300,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,10,f3,Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?,True,False Premise / Sycophancy Vulnerability,0.0,0,0.0,[],[]
 RUN_20260818_053235,2026-08-18T05:33:15.506269,sentence_chunker_300,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,10,f4,"Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.",True,Multi-Hop / Cross-Chunk Dispersal Failure,0.0,0,0.0,[],[]
+=======
+>>>>>>> 250eb1e0548f46fa71a7aad5627f803be4ab0b09:evaluation/retrieval/results/eval_metrics.csv
