@@ -1,21 +1,16 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List, Optional
-import os
+from typing import List
 from functools import lru_cache
 from pathlib import Path
-from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ENV_PATH = BASE_DIR / ".env"
-
-load_dotenv(dotenv_path=ENV_PATH)
-
 
 class Settings(BaseSettings):
     APP_NAME: str = "ELARA"
 
     # MongoDB Atlas
-    MONGODB_URI: str = ""
+    MONGODB_URI: str
     MONGODB_DB_NAME: str = "ai_projects"
     COLLECTION_NAME: str = "ELARA"
 
@@ -28,14 +23,14 @@ class Settings(BaseSettings):
     # File & Chunking
     FILE_ALLOWED_TYPES: List[str] = ["text/plain", "application/pdf", ".docx"]
     FILE_MAX_SIZE_MB: int = 10
-    FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512 KB
+    FILE_DEFAULT_CHUNK_SIZE: int = 512000
     USE_SIMPLE_CHUNKER: bool = True
         
     # LLM & Embedding Models
     GROQ_API_KEY: str = ""
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"
     EMBEDDING_MODEL_ID: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    EMBEDDING_MODEL_SIZE: int = 1024
+    EMBEDDING_MODEL_SIZE: int = 384
     GENERATION_BACKEND: str = "GROQ"
     EMBEDDING_BACKEND: str = "BGE"
 
@@ -48,11 +43,10 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "super_secret_elara_key_change_in_prod"
 
     model_config = SettingsConfigDict(
-        env_file=ENV_PATH,
+        env_file=str(ENV_PATH),
         env_file_encoding="utf-8",
         extra="ignore"
     )
-
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
