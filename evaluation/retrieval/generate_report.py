@@ -14,7 +14,12 @@ def generate_html_dashboard():
     df_summary = pd.read_csv(SUMMARY_CSV)
     df_raw = pd.read_csv(METRICS_CSV)
     
+    if df_raw.empty or "run_id" not in df_raw.columns:
+        print("Error: eval_metrics.csv is empty or missing 'run_id'. Run evaluation first.")
+        return
+
     latest_run_id = df_raw["run_id"].iloc[-1]
+
     df_latest = df_raw[df_raw["run_id"] == latest_run_id]
 
     # 1. Summary Rows HTML
