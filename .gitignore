@@ -1,4 +1,4 @@
-.env
+src/.env
 .venv
 __pycache__/
 *.pyc
@@ -6,3 +6,4 @@ __pycache__/
 .python-version
 src/data/.
 randoms.txt
+data/
