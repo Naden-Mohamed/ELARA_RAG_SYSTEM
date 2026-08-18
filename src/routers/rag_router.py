@@ -114,21 +114,8 @@ async def index_push(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
                 error="Failed to store vectors in Qdrant"
+
             )
-    # every chunk carries document_id back to Mongo, so a document can be
-    # looked up, deleted, or re-ingested without orphaning vectors in Qdrant
-    metadatas = [
-        {**c.chunk_metadata, "document_id": push_request.document_id, "doc_name": doc.doc_name if doc else None}
-        for c in file_chunks
-    ]
-
-    inserted = await vectordb.insert_many(
-        collection_name=DataBaseEnums.DOCUMENTS_COLLECTION.value,
-        texts=texts,
-        vectors=[vec.tolist() for vec in embeddings],
-        metadatas=metadatas,
-    )
-
         await document_model.update_status(
             doc_id=push_request.document_id,
             status=DocumentStatusEnums.PROCESSED.value,

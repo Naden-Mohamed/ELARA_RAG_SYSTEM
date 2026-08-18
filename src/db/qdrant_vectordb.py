@@ -53,8 +53,6 @@ class Qdrant:
 
             await self.client.get_collections()
 
-            print("QDRANT URL:", repr(self.url))
-            print("API KEY EXISTS:", bool(self.api_key))
         except Exception as e:
             self.logger.exception("Cannot connect to Qdrant")
             self.client = None
