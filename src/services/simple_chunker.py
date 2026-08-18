@@ -46,6 +46,7 @@ class SimpleChunker:
                 start_page = char_to_page[start] if start < len(char_to_page) else pages[-1]["page_number"]
                 end_idx = min(end - 1, len(char_to_page) - 1)
                 end_page = char_to_page[end_idx] if end_idx >= 0 else start_page
+                
  
                 chunks.append({
                     "text": chunk_text,

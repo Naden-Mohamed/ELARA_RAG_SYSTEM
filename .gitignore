@@ -1,7 +1,11 @@
-.env
+src/.env
 .venv
 __pycache__/
 *.pyc
 *.pyo
 .python-version
 src/data/.
+randoms.txt
+data/*.pdf
+lab_evaluation.py
+.env
