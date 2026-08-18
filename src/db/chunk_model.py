@@ -48,7 +48,6 @@ class ChunkModel:
             batch = chunks[i:i+batch_size]
 
             operations = [
-
                 InsertOne(chunk.dict())
                 for chunk in batch
             ]

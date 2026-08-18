@@ -23,26 +23,17 @@ class Settings(BaseSettings):
     # File & Chunking
     FILE_ALLOWED_TYPES: List[str] = ["text/plain", "application/pdf", ".docx"]
     FILE_MAX_SIZE_MB: int = 10
-<<<<<<< HEAD
     FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512 KB
     USE_SIMPLE_CHUNKER: bool = False
-=======
-    FILE_DEFAULT_CHUNK_SIZE: int = 512000
-    USE_SIMPLE_CHUNKER: bool = True
->>>>>>> 250eb1e0548f46fa71a7aad5627f803be4ab0b09
+
         
     # LLM & Embedding Models
     GROQ_API_KEY: str = ""
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"
-<<<<<<< HEAD
     BGE_EMBEDDING_MODEL_ID="BAAI/bge-m3"
     BGE_EMBEDDING_MODEL_SIZE=1024
     MiniLM_EMBEDDING_MODEL_ID="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" 
     MiniLM_EMBEDDING_MODEL_SIZE=384
-=======
-    EMBEDDING_MODEL_ID: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    EMBEDDING_MODEL_SIZE: int = 384
->>>>>>> 250eb1e0548f46fa71a7aad5627f803be4ab0b09
     GENERATION_BACKEND: str = "GROQ"
     EMBEDDING_BACKEND: str = "BGE"
 

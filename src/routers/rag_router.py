@@ -115,6 +115,19 @@ async def index_push(
                 status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
                 error="Failed to store vectors in Qdrant"
             )
+    # every chunk carries document_id back to Mongo, so a document can be
+    # looked up, deleted, or re-ingested without orphaning vectors in Qdrant
+    metadatas = [
+        {**c.chunk_metadata, "document_id": push_request.document_id, "doc_name": doc.doc_name if doc else None}
+        for c in file_chunks
+    ]
+
+    inserted = await vectordb.insert_many(
+        collection_name=DataBaseEnums.DOCUMENTS_COLLECTION.value,
+        texts=texts,
+        vectors=[vec.tolist() for vec in embeddings],
+        metadatas=metadatas,
+    )
 
         await document_model.update_status(
             doc_id=push_request.document_id,
@@ -171,6 +184,7 @@ async def get_index_info(
         data={"document_id": document_id, "index_info": info}
     )
 
+
 @rag.post("/search")                    
 async def search_by_vector(                   
     request: Request,
@@ -201,10 +215,7 @@ async def search_by_vector(
 
 @rag.post("/test-prompt", response_model=APIResponce)
 async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRequest):
-<<<<<<< HEAD
     llm_service = request.app.state.llm_service
-=======
->>>>>>> 250eb1e0548f46fa71a7aad5627f803be4ab0b09
     try:
         chunks_to_use = payload.context_chunks
         

@@ -148,19 +148,21 @@ async def ingest_file(
             _id=ObjectId(),
             chunk_text=chunk["text"],            
             chunk_metadata={
-                **chunk.get("metadata", {}),
+                **chunk["metadata"],
+                # "raw_text": chunk["raw_text"],    
                 "original_filename": doc.doc_name,
                 "page_numbers": chunk.get("metadata", {}).get("page_numbers", []),
                 "section_headings": chunk.get("metadata", {}).get("section_headings", []),
             },
-            chunk_order=chunk.get("metadata", {}).get("chunk_order", 0) + 1,
-            chunk_document_id=ObjectId(document_id)
+            chunk_order=chunk["metadata"]["chunk_order"] + 1,
+            chunk_document_id =  ObjectId(document_id)
+
         )
         for chunk in file_chunks
-    ]
+        ]
 
     chunk_model = await ChunkModel.get_instance(db_client=db_client)
-    chunks_count = await chunk_model.insert_many_chunks(chunks=file_chunks_records)
+    chunks_count = await chunk_model.insert_many_chunks(chunks = file_chunks_records)
 
     if chunks_count == 0:
         return APIResponce(
