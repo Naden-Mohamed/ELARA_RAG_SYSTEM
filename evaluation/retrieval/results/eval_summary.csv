@@ -1,7 +1,0 @@
-chunk_config,embedding_model,top_k,avg_precision,mean_reciprocal_rank,total_queries,total_relevant_retrieved
-docling_hierarchical_512,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,3,0.0,0.0,20,0
-docling_hierarchical_512,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,5,0.0,0.0,20,0
-docling_hierarchical_512,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,10,0.0,0.0,20,0
-sentence_chunker_300,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,3,0.0,0.0,20,0
-sentence_chunker_300,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,5,0.0,0.0,20,0
-sentence_chunker_300,sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,10,0.0,0.0,20,0
