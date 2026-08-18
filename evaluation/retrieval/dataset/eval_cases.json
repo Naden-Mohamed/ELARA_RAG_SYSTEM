@@ -1,0 +1,333 @@
+[
+  {
+    "query_id": "q1",
+    "query": "What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 10,
+    "expected_keywords": [
+      "desired place of birth",
+      "preferred birth attendant",
+      "closest facility",
+      "funds",
+      "labour and birth companion",
+      "transport",
+      "blood donors"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q2",
+    "query": "What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 12,
+    "expected_keywords": [
+      "identifying and prioritizing problems",
+      "planning activities",
+      "implementing activities",
+      "evaluating activities",
+      "PLA"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q3",
+    "query": "What explicit conditions and safeguards does WHO specify for implementing male involvement interventions?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 11,
+    "expected_keywords": [
+      "women's choices",
+      "autonomy",
+      "decision-making",
+      "self-care",
+      "gender stereotypes"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q4",
+    "query": "Which pharmaceutical and clinical interventions did the WHO guideline recommend as eligible for delivery by trained Traditional Birth Attendants (TBAs)?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 11,
+    "expected_keywords": [
+      "misoprostol",
+      "calcium supplementation",
+      "iron and folic acid",
+      "IPTp",
+      "injectable contraceptives"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q5",
+    "query": "In which specific target settings and populations are Maternity Waiting Homes (MWHs) recommended?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 13,
+    "expected_keywords": [
+      "remote areas",
+      "hard-to-reach",
+      "geographic barriers",
+      "distance barriers",
+      "timely access"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q6",
+    "query": "What is the recommendation strength and evidence quality grade for a companion of choice during labour and childbirth?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 12,
+    "expected_keywords": [
+      "strong recommendation",
+      "moderate quality of evidence",
+      "companion of choice"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q7",
+    "query": "How is the recommendation for community-organized transport schemes classified regarding strength and evidence quality?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 13,
+    "expected_keywords": [
+      "conditional recommendation",
+      "very low-quality evidence",
+      "transport schemes"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q8",
+    "query": "Which interventions in the guideline were classified as Research Recommendations due to insufficient evidence?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 14,
+    "expected_keywords": [
+      "human rights",
+      "sexual and reproductive rights",
+      "Maternal Death Surveillance and Response",
+      "MDSR"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q9",
+    "query": "What are the minimum duration and target population coverage required for community women's groups to be effective?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 47,
+    "expected_keywords": [
+      "three years",
+      "30% of pregnant women",
+      "population coverage",
+      "facilitated"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q10",
+    "query": "What preparations are required for planned home births in settings where facility access is non-existent?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 25,
+    "expected_keywords": [
+      "skilled birth attendant",
+      "clean birth kit",
+      "essential newborn care",
+      "delayed bathing",
+      "24 hours"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q11",
+    "query": "What is the recommended maximum workload in number of groups per facilitator per month in women's group programs?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 47,
+    "expected_keywords": [
+      "8 to 10 groups",
+      "per month",
+      "facilitator",
+      "workload"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q12",
+    "query": "How were maternity services culturally adapted for Quechua indigenous women in the Peru study?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 75,
+    "expected_keywords": [
+      "rope",
+      "stool",
+      "vertical delivery",
+      "Quechua",
+      "cultural adaptation"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q13",
+    "query": "What was the pooled effect of women's groups on neonatal mortality in the reviewed meta-analysis?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 47,
+    "expected_keywords": [
+      "neonatal mortality",
+      "0.77",
+      "0.65-0.90",
+      "Odds Ratio",
+      "OR"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q14",
+    "query": "In what specific population and facility type did the study by Purdin et al. evaluate service utilization?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 26,
+    "expected_keywords": [
+      "Afghan refugee",
+      "Hangu district",
+      "Pakistan",
+      "EmOC",
+      "Emergency Obstetric"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q15",
+    "query": "What standard conceptual framework was adapted to evaluate community participation across the guideline reviews?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 49,
+    "expected_keywords": [
+      "Spectrum of Participation",
+      "IAP2",
+      "International Association for Public Participation"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q16",
+    "query": "What was the pooled risk ratio for negative perceptions of the birth experience when a continuous labor companion was present?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 44,
+    "expected_keywords": [
+      "0.69",
+      "0.59-0.79",
+      "Risk Ratio",
+      "negative experience",
+      "11133"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q17",
+    "query": "What are the four strategic intervention areas established in the 2003 IFC Framework?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 15,
+    "expected_keywords": [
+      "capacities to stay healthy",
+      "awareness of rights",
+      "linkages for social support",
+      "quality of care",
+      "IFC"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q18",
+    "query": "Which two analytical tools are recommended to examine community-level barriers and causes of maternal deaths in social autopsies?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 50,
+    "expected_keywords": [
+      "Three Delays",
+      "pathway to survival",
+      "Verbal autopsy"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q19",
+    "query": "Why was statistical meta-analysis not possible for most studies reviewed in this guideline?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 18,
+    "expected_keywords": [
+      "heterogeneity",
+      "risk of bias",
+      "study designs",
+      "outcome measures",
+      "implementation contexts"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "q20",
+    "query": "What was the primary finding of the Marsiglia et al. trial regarding cultural brokers in the USA?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": 42,
+    "expected_keywords": [
+      "cultural brokers",
+      "postpartum clinic visit",
+      "2.5 times",
+      "Latina"
+    ],
+    "is_failure_case": false,
+    "failure_mode": null
+  },
+  {
+    "query_id": "f1",
+    "query": "What is the exact oral dosage in micrograms and administration protocol for misoprostol recommended in this report for TBAs to prevent postpartum hemorrhage?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": null,
+    "expected_keywords": [],
+    "is_failure_case": true,
+    "failure_mode": "Out-of-Distribution / Hallucination Trigger"
+  },
+  {
+    "query_id": "f2",
+    "query": "What were the statistical results of the trial conducted in Nepal?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": null,
+    "expected_keywords": [],
+    "is_failure_case": true,
+    "failure_mode": "Ambiguous Query / Entity Disambiguation Failure"
+  },
+  {
+    "query_id": "f3",
+    "query": "Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": null,
+    "expected_keywords": [],
+    "is_failure_case": true,
+    "failure_mode": "False Premise / Sycophancy Vulnerability"
+  },
+  {
+    "query_id": "f4",
+    "query": "Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.",
+    "target_doc": "WHO recommendations on health promotion interventions for maternal and newborn health.pdf",
+    "target_page": null,
+    "expected_keywords": [
+      "conditional recommendation",
+      "very low-quality evidence",
+      "Maternity Waiting Homes",
+      "transport schemes"
+    ],
+    "is_failure_case": true,
+    "failure_mode": "Multi-Hop / Cross-Chunk Dispersal Failure"
+  }
+]

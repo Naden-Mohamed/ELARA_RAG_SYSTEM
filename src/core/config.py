@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # LLM & Embedding Models
     GROQ_API_KEY: str = ""
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"
-    EMBEDDING_MODEL_ID: str = "BAAI/bge-m3"
+    EMBEDDING_MODEL_ID: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     EMBEDDING_MODEL_SIZE: int = 1024
     GENERATION_BACKEND: str = "GROQ"
     EMBEDDING_BACKEND: str = "BGE"

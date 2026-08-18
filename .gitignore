@@ -7,3 +7,5 @@ __pycache__/
 src/data/.
 randoms.txt
 data/
+lab_evaluation.py
+.env

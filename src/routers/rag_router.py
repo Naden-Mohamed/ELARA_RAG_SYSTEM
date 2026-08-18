@@ -61,66 +61,88 @@ async def index_push(
     request: Request,
     push_request: PushRequest
 ):
-    db_client = request.app.state.db_client
-    vectordb = request.app.state.vectordb
-    embedding_service = request.app.state.embedding_service 
-    chunk_model = await ChunkModel.get_instance(db_client=db_client)
-    document_model = await DocumentModel.get_instance(db_client)
-    doc = await document_model.get_document_by_id(push_request.document_id)
-    
-    file_chunks = await chunk_model.get_document_chunks(document_id=push_request.document_id)
-    texts = [c.chunk_text for c in file_chunks]
-    embeddings = embedding_service.embed_text(texts, document_type=DocumentTypeEnum.DOCUMENT.value)
+    try:
+        db_client = request.app.state.db_client
+        vectordb = request.app.state.vectordb
+        embedding_service = request.app.state.embedding_service 
+        
+        chunk_model = await ChunkModel.get_instance(db_client=db_client)
+        document_model = await DocumentModel.get_instance(db_client)
+        doc = await document_model.get_document_by_id(push_request.document_id)
+        
+        file_chunks = await chunk_model.get_document_chunks(document_id=push_request.document_id)
+        
+        if not file_chunks:
+            return APIResponce(
+                status_code=status.HTTP_404_NOT_FOUND,
+                status=ResponseStatusEnums.NO_FILES_FOUNDED_TO_PROCESS.value,
+                error="No chunks found. Please run /data/ingest first."
+            )
 
-    if embeddings is None:
+        texts = [
+            c.chunk_text if hasattr(c, "chunk_text") else c.get("chunk_text", "")
+            for c in file_chunks
+        ]
+        
+        batch_size = 32
+        all_embeddings = []
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i + batch_size]
+            batch_emb = embedding_service.embed_text(batch_texts, document_type=DocumentTypeEnum.DOCUMENT.value)
+            if batch_emb is not None:
+                for vec in batch_emb:
+                    all_embeddings.append(vec.tolist() if hasattr(vec, "tolist") else list(vec))
+
+        if not all_embeddings or len(all_embeddings) != len(texts):
+            return APIResponce(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
+                error="Embedding generation failed"
+            )
+
+        metadatas = [
+            {
+                **(c.chunk_metadata if hasattr(c, "chunk_metadata") else c.get("chunk_metadata", {})),
+                "document_id": str(push_request.document_id),
+                "doc_name": doc.doc_name if doc and hasattr(doc, "doc_name") else (doc.get("doc_name") if isinstance(doc, dict) else "document")
+            }
+            for c in file_chunks
+        ]
+
+        inserted = await vectordb.insert_many(
+            collection_name=DataBaseEnums.DOCUMENTS_COLLECTION.value,
+            texts=texts,
+            vectors=all_embeddings,
+            metadatas=metadatas,
+            batch_size=32
+        )
+
+        if not inserted:
+            return APIResponce(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
+                error="Failed to store vectors in Qdrant"
+            )
+
         await document_model.update_status(
             doc_id=push_request.document_id,
-            status=DocumentStatusEnums.FAILED.value,
-            error_message="Embedding step failed",
+            status=DocumentStatusEnums.PROCESSED.value,
+            chunk_count=len(file_chunks),
         )
+
         return APIResponce(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
-            error="Embedding failed"
+            status_code=status.HTTP_200_OK,
+            status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
+            data={"document_id": push_request.document_id, "chunk_count": len(file_chunks)}
         )
 
-    metadatas = [
-        {**c.chunk_metadata, "document_id": push_request.document_id, "doc_name": doc.doc_name if doc else None}
-        for c in file_chunks
-    ]
-
-    inserted = await vectordb.insert_many(
-        collection_name=DataBaseEnums.DOCUMENTS_COLLECTION.value,
-        texts=texts,
-        vectors=[vec.tolist() for vec in embeddings],
-        metadatas=metadatas,
-    )
-
-    if not inserted:
-        await document_model.update_status(
-            doc_id=push_request.document_id,
-            status=DocumentStatusEnums.FAILED.value,
-            error_message="Qdrant insert failed",
-        )
+    except Exception as e:
+        logger.exception("Error during /rag/push")
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
-            error="Failed to store vectors"
+            error=str(e)
         )
-
-    await document_model.update_status(
-        doc_id=push_request.document_id,
-        status=DocumentStatusEnums.PROCESSED.value,
-        chunk_count=len(file_chunks),
-    )
-
-    return APIResponce(
-        status_code=status.HTTP_200_OK,
-        status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
-        data={"document_id": push_request.document_id, "chunk_count": len(file_chunks)}
-    )
-
-
 @rag.post("/info")                    
 async def get_index_info(                   
     request: Request,

@@ -222,7 +222,7 @@ async def interactive_evaluation():
     exp_name = input("  > Experiment / Run Name (e.g., Config_A_BGE_512): ").strip() or "Run_" + datetime.datetime.now().strftime("%H%M%S")
     chunk_size = input("  > Chunk Size used in ingestion (e.g., 512, 256): ").strip() or "512"
     chunk_overlap = input("  > Chunk Overlap used (e.g., 50, 30): ").strip() or "50"
-    emb_model = input("  > Embedding Model (e.g., BAAI/bge-m3): ").strip() or "BAAI/bge-m3"
+    emb_model = input("  > Embedding Model (e.g., sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2): ").strip() or "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     strategy = input("  > Retrieval Strategy [Dense / Hybrid / Re-ranked]: ").strip() or "Dense"
     
     top_k_input = input("  > Top-K to retrieve per query (3 / 5 / 10) [Default: 5]: ").strip() or "5"

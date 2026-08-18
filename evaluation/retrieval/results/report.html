@@ -1,0 +1,2144 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ELARA RAG — Retrieval Benchmark Dashboard</title>
+        <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #e2e8f0; padding: 30px; }
+            h1 { color: #38bdf8; font-size: 24px; margin-bottom: 8px; }
+            h2 { color: #94a3b8; font-size: 18px; margin: 30px 0 12px 0; border-left: 4px solid #38bdf8; padding-left: 10px; }
+            .subtitle { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+            
+            table { width: 100%; border-collapse: separate; border-spacing: 0; background: #131b2e; border-radius: 8px; overflow: hidden; margin-bottom: 30px; border: 1px solid #1e293b; }
+            th, td { padding: 12px 16px; border-bottom: 1px solid #1e293b; text-align: left; vertical-align: top; font-size: 13px; }
+            th { background: #0f172a; color: #94a3b8; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+            
+            .badge-blue { background: #0369a1; color: #f0f9ff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+            .badge-purple { background: #6b21a8; color: #faf5ff; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+            .tag-success { background: #065f46; color: #d1fae5; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+            .tag-fail { background: #7f1d1d; color: #fee2e2; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+            
+            .chunk-box { background: #0b0f19; border: 1px solid #1e293b; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+            .chunk-header { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+            .chunk-meta { font-size: 11px; color: #38bdf8; margin-bottom: 2px; }
+            .chunk-id { font-size: 10px; color: #64748b; font-family: monospace; }
+            .chunk-text { font-size: 12px; color: #cbd5e1; margin-top: 5px; font-style: italic; line-height: 1.4; }
+            .failure-tag { color: #f87171; font-size: 11px; margin-top: 4px; font-weight: 500; }
+            code { font-family: Consolas, monospace; color: #a5f3fc; background: #082f49; padding: 2px 5px; border-radius: 3px; }
+        </style>
+    </head>
+    <body>
+        <h1>ELARA Clinical RAG — Retrieval Evaluation Benchmark</h1>
+        <div class="subtitle">Comparison of Top-K configurations, Chunking Strategies, Precision@K, and MRR.</div>
+
+        <h2>Aggregated Metrics Grid (Combinations & Averages)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Chunking Strategy</th>
+                    <th>Embedding Model</th>
+                    <th>Top-K</th>
+                    <th>Precision@K</th>
+                    <th>MRR</th>
+                    <th>Evaluated Cases</th>
+                    <th>Total Relevant Retrieved</th>
+                </tr>
+            </thead>
+            <tbody>
+        <tr>
+            <td><code>docling_hierarchical_512</code></td>
+            <td><code>sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</code></td>
+            <td><span class="badge-blue">Top-3</span></td>
+            <td><strong>0.00%</strong></td>
+            <td><strong>0.0000</strong></td>
+            <td>20</td>
+            <td>0</td>
+        </tr>
+        
+        <tr>
+            <td><code>docling_hierarchical_512</code></td>
+            <td><code>sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</code></td>
+            <td><span class="badge-blue">Top-5</span></td>
+            <td><strong>0.00%</strong></td>
+            <td><strong>0.0000</strong></td>
+            <td>20</td>
+            <td>0</td>
+        </tr>
+        
+        <tr>
+            <td><code>docling_hierarchical_512</code></td>
+            <td><code>sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</code></td>
+            <td><span class="badge-blue">Top-10</span></td>
+            <td><strong>0.00%</strong></td>
+            <td><strong>0.0000</strong></td>
+            <td>20</td>
+            <td>0</td>
+        </tr>
+        
+        <tr>
+            <td><code>sentence_chunker_300</code></td>
+            <td><code>sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</code></td>
+            <td><span class="badge-blue">Top-3</span></td>
+            <td><strong>0.00%</strong></td>
+            <td><strong>0.0000</strong></td>
+            <td>20</td>
+            <td>0</td>
+        </tr>
+        
+        <tr>
+            <td><code>sentence_chunker_300</code></td>
+            <td><code>sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</code></td>
+            <td><span class="badge-blue">Top-5</span></td>
+            <td><strong>0.00%</strong></td>
+            <td><strong>0.0000</strong></td>
+            <td>20</td>
+            <td>0</td>
+        </tr>
+        
+        <tr>
+            <td><code>sentence_chunker_300</code></td>
+            <td><code>sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</code></td>
+            <td><span class="badge-blue">Top-10</span></td>
+            <td><strong>0.00%</strong></td>
+            <td><strong>0.0000</strong></td>
+            <td>20</td>
+            <td>0</td>
+        </tr>
+        </tbody>
+        </table>
+
+        <h2>Detailed Runs & Individual Ground-Truth Matches</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Evaluation Query</th>
+                    <th style="width: 15%;">Parameters</th>
+                    <th style="width: 12%;">Performance</th>
+                    <th style="width: 40%;">Retrieved Chunks & Citations (Doc, Page, Section)</th>
+                </tr>
+            </thead>
+            <tbody>
+        <tr>
+            <td><strong>q1</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q2</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q3</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What explicit conditions and safeguards does WHO specify for implementing male involvement interventions?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q4</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which pharmaceutical and clinical interventions did the WHO guideline recommend as eligible for delivery by trained Traditional Birth Attendants (TBAs)?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q5</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In which specific target settings and populations are Maternity Waiting Homes (MWHs) recommended?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q6</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommendation strength and evidence quality grade for a companion of choice during labour and childbirth?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q7</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How is the recommendation for community-organized transport schemes classified regarding strength and evidence quality?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q8</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which interventions in the guideline were classified as Research Recommendations due to insufficient evidence?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q9</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the minimum duration and target population coverage required for community women's groups to be effective?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q10</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What preparations are required for planned home births in settings where facility access is non-existent?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q11</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommended maximum workload in number of groups per facilitator per month in women's group programs?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q12</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How were maternity services culturally adapted for Quechua indigenous women in the Peru study?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q13</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled effect of women's groups on neonatal mortality in the reviewed meta-analysis?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q14</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In what specific population and facility type did the study by Purdin et al. evaluate service utilization?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q15</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What standard conceptual framework was adapted to evaluate community participation across the guideline reviews?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q16</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled risk ratio for negative perceptions of the birth experience when a continuous labor companion was present?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q17</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four strategic intervention areas established in the 2003 IFC Framework?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q18</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which two analytical tools are recommended to examine community-level barriers and causes of maternal deaths in social autopsies?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q19</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Why was statistical meta-analysis not possible for most studies reviewed in this guideline?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q20</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the primary finding of the Marsiglia et al. trial regarding cultural brokers in the USA?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f1</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What is the exact oral dosage in micrograms and administration protocol for misoprostol recommended in this report for TBAs to prevent postpartum hemorrhage?</strong>
+                <div class='failure-tag'>Mode: Out-of-Distribution / Hallucination Trigger</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f2</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What were the statistical results of the trial conducted in Nepal?</strong>
+                <div class='failure-tag'>Mode: Ambiguous Query / Entity Disambiguation Failure</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f3</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?</strong>
+                <div class='failure-tag'>Mode: False Premise / Sycophancy Vulnerability</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f4</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.</strong>
+                <div class='failure-tag'>Mode: Multi-Hop / Cross-Chunk Dispersal Failure</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q1</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q2</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q3</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What explicit conditions and safeguards does WHO specify for implementing male involvement interventions?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q4</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which pharmaceutical and clinical interventions did the WHO guideline recommend as eligible for delivery by trained Traditional Birth Attendants (TBAs)?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q5</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In which specific target settings and populations are Maternity Waiting Homes (MWHs) recommended?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q6</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommendation strength and evidence quality grade for a companion of choice during labour and childbirth?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q7</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How is the recommendation for community-organized transport schemes classified regarding strength and evidence quality?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q8</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which interventions in the guideline were classified as Research Recommendations due to insufficient evidence?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q9</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the minimum duration and target population coverage required for community women's groups to be effective?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q10</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What preparations are required for planned home births in settings where facility access is non-existent?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q11</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommended maximum workload in number of groups per facilitator per month in women's group programs?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q12</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How were maternity services culturally adapted for Quechua indigenous women in the Peru study?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q13</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled effect of women's groups on neonatal mortality in the reviewed meta-analysis?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q14</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In what specific population and facility type did the study by Purdin et al. evaluate service utilization?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q15</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What standard conceptual framework was adapted to evaluate community participation across the guideline reviews?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q16</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled risk ratio for negative perceptions of the birth experience when a continuous labor companion was present?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q17</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four strategic intervention areas established in the 2003 IFC Framework?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q18</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which two analytical tools are recommended to examine community-level barriers and causes of maternal deaths in social autopsies?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q19</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Why was statistical meta-analysis not possible for most studies reviewed in this guideline?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q20</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the primary finding of the Marsiglia et al. trial regarding cultural brokers in the USA?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f1</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What is the exact oral dosage in micrograms and administration protocol for misoprostol recommended in this report for TBAs to prevent postpartum hemorrhage?</strong>
+                <div class='failure-tag'>Mode: Out-of-Distribution / Hallucination Trigger</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f2</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What were the statistical results of the trial conducted in Nepal?</strong>
+                <div class='failure-tag'>Mode: Ambiguous Query / Entity Disambiguation Failure</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f3</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?</strong>
+                <div class='failure-tag'>Mode: False Premise / Sycophancy Vulnerability</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f4</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.</strong>
+                <div class='failure-tag'>Mode: Multi-Hop / Cross-Chunk Dispersal Failure</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q1</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q2</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q3</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What explicit conditions and safeguards does WHO specify for implementing male involvement interventions?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q4</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which pharmaceutical and clinical interventions did the WHO guideline recommend as eligible for delivery by trained Traditional Birth Attendants (TBAs)?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q5</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In which specific target settings and populations are Maternity Waiting Homes (MWHs) recommended?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q6</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommendation strength and evidence quality grade for a companion of choice during labour and childbirth?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q7</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How is the recommendation for community-organized transport schemes classified regarding strength and evidence quality?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q8</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which interventions in the guideline were classified as Research Recommendations due to insufficient evidence?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q9</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the minimum duration and target population coverage required for community women's groups to be effective?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q10</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What preparations are required for planned home births in settings where facility access is non-existent?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q11</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommended maximum workload in number of groups per facilitator per month in women's group programs?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q12</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How were maternity services culturally adapted for Quechua indigenous women in the Peru study?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q13</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled effect of women's groups on neonatal mortality in the reviewed meta-analysis?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q14</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In what specific population and facility type did the study by Purdin et al. evaluate service utilization?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q15</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What standard conceptual framework was adapted to evaluate community participation across the guideline reviews?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q16</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled risk ratio for negative perceptions of the birth experience when a continuous labor companion was present?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q17</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four strategic intervention areas established in the 2003 IFC Framework?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q18</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which two analytical tools are recommended to examine community-level barriers and causes of maternal deaths in social autopsies?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q19</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Why was statistical meta-analysis not possible for most studies reviewed in this guideline?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q20</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the primary finding of the Marsiglia et al. trial regarding cultural brokers in the USA?</strong>
+                
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f1</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What is the exact oral dosage in micrograms and administration protocol for misoprostol recommended in this report for TBAs to prevent postpartum hemorrhage?</strong>
+                <div class='failure-tag'>Mode: Out-of-Distribution / Hallucination Trigger</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f2</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What were the statistical results of the trial conducted in Nepal?</strong>
+                <div class='failure-tag'>Mode: Ambiguous Query / Entity Disambiguation Failure</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f3</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?</strong>
+                <div class='failure-tag'>Mode: False Premise / Sycophancy Vulnerability</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f4</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.</strong>
+                <div class='failure-tag'>Mode: Multi-Hop / Cross-Chunk Dispersal Failure</div>
+            </td>
+            <td><code>docling_hierarchical_512</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q1</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q2</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q3</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What explicit conditions and safeguards does WHO specify for implementing male involvement interventions?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q4</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which pharmaceutical and clinical interventions did the WHO guideline recommend as eligible for delivery by trained Traditional Birth Attendants (TBAs)?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q5</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In which specific target settings and populations are Maternity Waiting Homes (MWHs) recommended?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q6</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommendation strength and evidence quality grade for a companion of choice during labour and childbirth?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q7</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How is the recommendation for community-organized transport schemes classified regarding strength and evidence quality?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q8</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which interventions in the guideline were classified as Research Recommendations due to insufficient evidence?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q9</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the minimum duration and target population coverage required for community women's groups to be effective?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q10</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What preparations are required for planned home births in settings where facility access is non-existent?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q11</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommended maximum workload in number of groups per facilitator per month in women's group programs?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q12</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How were maternity services culturally adapted for Quechua indigenous women in the Peru study?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q13</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled effect of women's groups on neonatal mortality in the reviewed meta-analysis?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q14</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In what specific population and facility type did the study by Purdin et al. evaluate service utilization?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q15</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What standard conceptual framework was adapted to evaluate community participation across the guideline reviews?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q16</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled risk ratio for negative perceptions of the birth experience when a continuous labor companion was present?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q17</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four strategic intervention areas established in the 2003 IFC Framework?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q18</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which two analytical tools are recommended to examine community-level barriers and causes of maternal deaths in social autopsies?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q19</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Why was statistical meta-analysis not possible for most studies reviewed in this guideline?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q20</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the primary finding of the Marsiglia et al. trial regarding cultural brokers in the USA?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f1</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What is the exact oral dosage in micrograms and administration protocol for misoprostol recommended in this report for TBAs to prevent postpartum hemorrhage?</strong>
+                <div class='failure-tag'>Mode: Out-of-Distribution / Hallucination Trigger</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f2</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What were the statistical results of the trial conducted in Nepal?</strong>
+                <div class='failure-tag'>Mode: Ambiguous Query / Entity Disambiguation Failure</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f3</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?</strong>
+                <div class='failure-tag'>Mode: False Premise / Sycophancy Vulnerability</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f4</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.</strong>
+                <div class='failure-tag'>Mode: Multi-Hop / Cross-Chunk Dispersal Failure</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-3</span></td>
+            <td>
+                <strong>P@3:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q1</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q2</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q3</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What explicit conditions and safeguards does WHO specify for implementing male involvement interventions?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q4</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which pharmaceutical and clinical interventions did the WHO guideline recommend as eligible for delivery by trained Traditional Birth Attendants (TBAs)?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q5</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In which specific target settings and populations are Maternity Waiting Homes (MWHs) recommended?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q6</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommendation strength and evidence quality grade for a companion of choice during labour and childbirth?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q7</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How is the recommendation for community-organized transport schemes classified regarding strength and evidence quality?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q8</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which interventions in the guideline were classified as Research Recommendations due to insufficient evidence?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q9</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the minimum duration and target population coverage required for community women's groups to be effective?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q10</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What preparations are required for planned home births in settings where facility access is non-existent?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q11</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommended maximum workload in number of groups per facilitator per month in women's group programs?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q12</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How were maternity services culturally adapted for Quechua indigenous women in the Peru study?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q13</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled effect of women's groups on neonatal mortality in the reviewed meta-analysis?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q14</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In what specific population and facility type did the study by Purdin et al. evaluate service utilization?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q15</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What standard conceptual framework was adapted to evaluate community participation across the guideline reviews?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q16</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled risk ratio for negative perceptions of the birth experience when a continuous labor companion was present?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q17</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four strategic intervention areas established in the 2003 IFC Framework?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q18</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which two analytical tools are recommended to examine community-level barriers and causes of maternal deaths in social autopsies?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q19</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Why was statistical meta-analysis not possible for most studies reviewed in this guideline?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q20</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the primary finding of the Marsiglia et al. trial regarding cultural brokers in the USA?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f1</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What is the exact oral dosage in micrograms and administration protocol for misoprostol recommended in this report for TBAs to prevent postpartum hemorrhage?</strong>
+                <div class='failure-tag'>Mode: Out-of-Distribution / Hallucination Trigger</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f2</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What were the statistical results of the trial conducted in Nepal?</strong>
+                <div class='failure-tag'>Mode: Ambiguous Query / Entity Disambiguation Failure</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f3</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?</strong>
+                <div class='failure-tag'>Mode: False Premise / Sycophancy Vulnerability</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f4</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.</strong>
+                <div class='failure-tag'>Mode: Multi-Hop / Cross-Chunk Dispersal Failure</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-5</span></td>
+            <td>
+                <strong>P@5:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q1</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What essential components must be included in a Birth Preparedness and Complication Readiness (BPCR) plan?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q2</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four distinct phases of the Participatory Learning and Action (PLA) cycle in community women's groups?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q3</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What explicit conditions and safeguards does WHO specify for implementing male involvement interventions?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q4</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which pharmaceutical and clinical interventions did the WHO guideline recommend as eligible for delivery by trained Traditional Birth Attendants (TBAs)?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q5</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In which specific target settings and populations are Maternity Waiting Homes (MWHs) recommended?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q6</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommendation strength and evidence quality grade for a companion of choice during labour and childbirth?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q7</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How is the recommendation for community-organized transport schemes classified regarding strength and evidence quality?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q8</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which interventions in the guideline were classified as Research Recommendations due to insufficient evidence?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q9</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the minimum duration and target population coverage required for community women's groups to be effective?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q10</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What preparations are required for planned home births in settings where facility access is non-existent?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q11</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What is the recommended maximum workload in number of groups per facilitator per month in women's group programs?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q12</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>How were maternity services culturally adapted for Quechua indigenous women in the Peru study?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q13</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled effect of women's groups on neonatal mortality in the reviewed meta-analysis?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q14</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>In what specific population and facility type did the study by Purdin et al. evaluate service utilization?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q15</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What standard conceptual framework was adapted to evaluate community participation across the guideline reviews?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q16</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the pooled risk ratio for negative perceptions of the birth experience when a continuous labor companion was present?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q17</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What are the four strategic intervention areas established in the 2003 IFC Framework?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q18</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Which two analytical tools are recommended to examine community-level barriers and causes of maternal deaths in social autopsies?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q19</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>Why was statistical meta-analysis not possible for most studies reviewed in this guideline?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>q20</strong><br><span class="badge-blue">Standard Query</span></td>
+            <td>
+                <strong>What was the primary finding of the Marsiglia et al. trial regarding cultural brokers in the USA?</strong>
+                
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f1</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What is the exact oral dosage in micrograms and administration protocol for misoprostol recommended in this report for TBAs to prevent postpartum hemorrhage?</strong>
+                <div class='failure-tag'>Mode: Out-of-Distribution / Hallucination Trigger</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f2</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>What were the statistical results of the trial conducted in Nepal?</strong>
+                <div class='failure-tag'>Mode: Ambiguous Query / Entity Disambiguation Failure</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f3</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Why did the WHO recommend completely excluding male partners from antenatal care consultations to preserve maternal privacy in this guideline?</strong>
+                <div class='failure-tag'>Mode: False Premise / Sycophancy Vulnerability</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        
+        <tr>
+            <td><strong>f4</strong><br><span class="badge-purple">Negative/Failure Case</span></td>
+            <td>
+                <strong>Compare the recommendations for Maternity Waiting Homes and Community Transport Schemes in terms of recommendation strength, evidence quality, and impact on maternal/neonatal mortality.</strong>
+                <div class='failure-tag'>Mode: Multi-Hop / Cross-Chunk Dispersal Failure</div>
+            </td>
+            <td><code>sentence_chunker_300</code><br><span class="badge-blue">Top-10</span></td>
+            <td>
+                <strong>P@10:</strong> 0.0%<br>
+                <strong>MRR:</strong> 0.0
+            </td>
+            <td></td>
+        </tr>
+        </tbody>
+        </table>
+    </body>
+    </html>
+    
