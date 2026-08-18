@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.errors import ConnectionFailure
 import logging
 import gridfs
-
+from datetime import timezone
 logger = logging.getLogger(__name__)
 
 
@@ -67,8 +67,8 @@ class DocumentModel:
         if error_message is not None:
             updated_fields["error_message"] = error_message
 
-        if updated_fields["status"] in ("processed", "failed"):
-            updated_fields["processed_at"] = datetime.now()
+        if updated_fields["status"] in (DataBaseEnums.PROCESSED.value, DataBaseEnums.FAILED.value):
+            updated_fields["processed_at"] = datetime.now(timezone.utc)
         
     
         return await self.collection.update_one(

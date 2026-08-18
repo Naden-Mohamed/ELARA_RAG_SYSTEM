@@ -29,13 +29,15 @@ class Settings(BaseSettings):
     FILE_ALLOWED_TYPES: List[str] = ["text/plain", "application/pdf", ".docx"]
     FILE_MAX_SIZE_MB: int = 10
     FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512 KB
-    USE_SIMPLE_CHUNKER: bool = True
+    USE_SIMPLE_CHUNKER: bool = False
         
     # LLM & Embedding Models
     GROQ_API_KEY: str = ""
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"
-    EMBEDDING_MODEL_ID: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    EMBEDDING_MODEL_SIZE: int = 1024
+    BGE_EMBEDDING_MODEL_ID="BAAI/bge-m3"
+    BGE_EMBEDDING_MODEL_SIZE=1024
+    MiniLM_EMBEDDING_MODEL_ID="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" 
+    MiniLM_EMBEDDING_MODEL_SIZE=384
     GENERATION_BACKEND: str = "GROQ"
     EMBEDDING_BACKEND: str = "BGE"
 
@@ -44,6 +46,7 @@ class Settings(BaseSettings):
     GENERATION_DEFAULT_TEMPERATURE: float = 0.1
     TOKENIZER_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
 
+    CROSS_ENCODER_RERANKER: str = "BAAI/bge-reranker-base"
     # JWT Security
     JWT_SECRET_KEY: str = "super_secret_elara_key_change_in_prod"
 

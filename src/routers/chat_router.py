@@ -6,10 +6,8 @@ from routers.auth_router import get_current_user
 from routers.schemas.rag_requests import UserPersonaEnum, LanguageEnum, MockChunkInput
 from routers.schemas.chat_schemas import ChatHistoryResponse, ChatSummaryDTO
 from db.chat_model import ChatModel
-from services.llm_service import LLMService
 
 chat_router = APIRouter(tags=["Chat & Memory"], prefix="/chat")
-llm_service = LLMService()
 
 
 class SendMessageRequest(BaseModel):
@@ -25,6 +23,7 @@ async def send_chat_message(
     current_user: dict = Depends(get_current_user)
 ):
     db = request.app.state.db_client
+    llm_service = request.app.state.llm_service
     chat_model = ChatModel(db)
     user_id = str(current_user["_id"])
     

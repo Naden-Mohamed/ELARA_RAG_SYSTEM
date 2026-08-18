@@ -1,9 +1,10 @@
 import os
 import time
 import re
-from typing import List, Tuple
+from typing import List, Tuple, cast
 from dotenv import load_dotenv
 from groq import AsyncGroq
+from groq.types.chat import ChatCompletionMessageParam
 
 from core.config import get_settings
 from core.prompts import (
@@ -14,9 +15,10 @@ from core.prompts import (
     SOURCE_HEADER_TEMPLATES
 )
 from routers.schemas.rag_requests import UserPersonaEnum, LanguageEnum, MockChunkInput
+import logging
 
 load_dotenv()
-
+logger = logging.getLogger(__name__)
 
 class LLMService:
     def __init__(self):
@@ -86,17 +88,22 @@ class LLMService:
         user_prompt = self.build_user_prompt(query, chunks, language)
 
         start_time = time.time()
+        messages: List[ChatCompletionMessageParam] = [
+            cast(ChatCompletionMessageParam, {"role": "system", "content": system_prompt}),
+            cast(ChatCompletionMessageParam, {"role": "user", "content": user_prompt}),
+        ]
+
         response = await self.client.chat.completions.create(
             model=self.model_id,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
+            messages=messages,
             temperature=self.temperature,
             max_tokens=800
         )
         latency = round(time.time() - start_time, 3)
-        answer = response.choices[0].message.content
+        answer = response.choices[0].message.content if response.choices[0].message.content else ""
+        if not answer:
+            logger.error("No answer returned from")
+            
 
         citations = re.findall(r"\[(?:Doc|المستند):.*?,.*?,.*?\]", answer)
         return answer, latency, citations
@@ -114,12 +121,14 @@ class LLMService:
         system_prompt = self.build_system_prompt_with_memory(persona, language, mother_profile, dynamic_memories)
         user_prompt = self.build_user_prompt(query, chunks, language)
 
-        messages = [{"role": "system", "content": system_prompt}]
+        messages: List[ChatCompletionMessageParam] = [
+            cast(ChatCompletionMessageParam, {"role": "system", "content": system_prompt})
+        ]
         
         for msg in history:
-            messages.append({"role": msg["role"], "content": msg["content"]})
+            messages.append(cast(ChatCompletionMessageParam, {"role": msg["role"], "content": msg["content"]}))
             
-        messages.append({"role": "user", "content": user_prompt})
+        messages.append(cast(ChatCompletionMessageParam, {"role": "user", "content": user_prompt}))
 
         start_time = time.time()
         response = await self.client.chat.completions.create(
@@ -129,7 +138,8 @@ class LLMService:
             max_tokens=850
         )
         latency = round(time.time() - start_time, 3)
-        answer = response.choices[0].message.content
+        answer = response.choices[0].message.content if response.choices[0].message.content else ""
+
         citations = re.findall(r"\[(?:Doc|المستند):.*?,.*?,.*?\]", answer)
 
         return answer, latency, citations

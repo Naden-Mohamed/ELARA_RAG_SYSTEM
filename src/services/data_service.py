@@ -12,13 +12,13 @@ from docling.datamodel.base_models import InputFormat
 from transformers import AutoTokenizer
 from fastapi import UploadFile
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
 class DocumentParserService:
     def __init__(self) -> None:
         self.settings = get_settings()
-
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.files_path = os.path.join(self.base_dir, "data")
 
@@ -55,8 +55,9 @@ class DocumentParserService:
                     InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
                 }
             )
-            result = converter.convert(Path(file_path))
-            return result.document
+            # synchronous CPU-bound
+            result = asyncio.run_coroutine_threadsafe(asyncio.to_thread(converter.convert, Path(file_path)), asyncio.get_event_loop())
+            return result.result().document
         except Exception as e:
             logger.error(f"Docling conversion failed for {file_path}: {e}")
             return None
@@ -109,6 +110,7 @@ class DocumentParserService:
                 "raw_text": chunk.text,
                 "metadata": {
                     "chunk_index": idx,
+                    "document_name": document,
                     "page_numbers": page_numbers,               # [3, 4]
                     "section_headings": headings,               # ["Chapter 2", "Newton's Laws"]
                     "element_types": list(set(element_types)),  # ["TextItem", "TableItem"]

@@ -27,6 +27,19 @@ class EmbeddingService:
                 model_id,
                 trust_remote_code=True  # required for BAAI/bge-multilingual-gemma2
             )
+            actual_dim = self.client.get_embedding_dimension()
+            if actual_dim != embedding_size:
+                self.logger.warning(
+                    f"Configured EMBEDDING_MODEL_SIZE={embedding_size} does not match "
+                    f"actual model output dim={actual_dim}. Using {actual_dim}."
+                )
+            self.embedding_size = actual_dim
+
+            # Only BGE-family models were trained with instruction prefixes
+            self.is_instruction_tuned = "bge" in model_id.lower()
+
+            self.logger.info(f"Embedding model '{model_id}' loaded (dim={actual_dim}).")
+
             self.logger.info(f"BGE model '{model_id}' loaded successfully.")
 
             print(f"BGE model '{model_id}' loaded successfully.")
@@ -58,8 +71,6 @@ class EmbeddingService:
 
         try:
             text = [self.process_text(t) for t in text]
-
-            print(text)
 
             # bge-multilingual-gemma2 uses instruction-based embedding
             # document_type differentiates query vs passage for better accuracy

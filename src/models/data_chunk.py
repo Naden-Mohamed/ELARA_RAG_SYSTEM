@@ -25,3 +25,8 @@ class DataChunk(BaseModel):
             }
         ]
     
+class RerankedChunk(BaseModel):
+    text: str | None = None
+    score: float | None = None
+    metadata: dict |None = None
+

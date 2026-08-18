@@ -6,6 +6,6 @@ __pycache__/
 .python-version
 src/data/.
 randoms.txt
-data/
+data/*.pdf
 lab_evaluation.py
 .env

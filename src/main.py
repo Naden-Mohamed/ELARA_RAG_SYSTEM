@@ -12,6 +12,7 @@ from routers.chat_router import chat_router
 # Vector DB & Services
 from db.qdrant_vectordb import Qdrant
 from services.embedding import EmbeddingService
+from services.llm_service import LLMService
 
 logger = getLogger(__name__)
 
@@ -36,9 +37,12 @@ async def lifespan(app: FastAPI):
         default_input_max_characters=settings.INPUT_DEFAULT_MAX_CHARACTERS,
     )
     app.state.embedding_service.set_embedding_model(
-        model_id=settings.EMBEDDING_MODEL_ID,
-        embedding_size=settings.EMBEDDING_MODEL_SIZE,
+        model_id=settings.BGE_EMBEDDING_MODEL_ID,
+        embedding_size=settings.BGE_EMBEDDING_MODEL_SIZE,
     )
+
+    # 4. LLM provider service
+    app.state.llm_service = LLMService()
 
     yield
 

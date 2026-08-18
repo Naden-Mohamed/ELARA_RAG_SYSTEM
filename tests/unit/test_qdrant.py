@@ -1,6 +1,6 @@
 import asyncio
 from qdrant_client import AsyncQdrantClient
-from ...src.core.config import get_settings
+from src.core.config import get_settings
 
 async def main():
     settings = get_settings()

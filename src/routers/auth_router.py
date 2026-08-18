@@ -14,19 +14,20 @@ security = HTTPBearer()
 
 
 # Dependency to get the current authenticated user
-async def get_current_user(request: Request, creds: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+async def get_current_user(request: Request, creds: HTTPAuthorizationCredentials = Depends(security)):
     token = creds.credentials
     payload = decode_access_token(token)
     if not payload or "sub" not in payload:
-        raise HTTPException(
+        return APIResponce(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired authentication credentials."
+            status="failed",
+            error="Invalid or expired authentication credentials."
         )
     
     user_model = UserModel(request.app.state.db_client)
     user = await user_model.get_by_id(payload["sub"])
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        return APIResponce(status_code=status.HTTP_404_NOT_FOUND,status="failed", error="User not found.")
     return user
 
 

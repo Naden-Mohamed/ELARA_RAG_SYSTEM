@@ -1,5 +1,5 @@
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import VectorParams, PointStruct, Distance
+from qdrant_client.models import VectorParams, PointStruct, Distance, models
 from typing import List, Optional
 import logging
 from enum import Enum
@@ -47,7 +47,7 @@ class Qdrant:
                 url=self.url,
                 api_key=self.api_key,
                 https=is_https,
-                timeout=20.0,
+                timeout=20,
                 check_compatibility=False,
             )
 
@@ -113,6 +113,11 @@ class Qdrant:
                         distance=self.distance_metric
                     )
                 },
+
+                sparse_vectors_config={
+                    "sparse": models.SparseVectorParams(modifier=models.Modifier.IDF)
+                }
+
             )
             print(f"Collection '{collection_name}' created with size {embedding_size}.")
             self.logger.info(f"Collection '{collection_name}' created with size {embedding_size}.")
@@ -158,7 +163,7 @@ class Qdrant:
         
         if not await self.is_collection_exists(collection_name=collection_name):
             self.logger.error(f"Collection '{collection_name}' doesn't exist")
-            created = await self.create_collection(collection_name, self.settings.EMBEDDING_MODEL_SIZE, do_reset=0)
+            created = await self.create_collection(collection_name, self.settings.BGE_EMBEDDING_MODEL_SIZE, do_reset=0)
             print(f"Collection '{collection_name}' created")
             if not created:
                 return False

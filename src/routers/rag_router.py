@@ -32,7 +32,6 @@ from core.config import get_settings
 
 logger = logging.getLogger(__name__)
 rag = APIRouter(tags=["api/rag"], prefix="/rag")
-llm_service = LLMService()
 settings = get_settings()
 
 MOCK_BENCHMARK_CHUNKS = [
@@ -80,7 +79,7 @@ async def index_push(
             )
 
         texts = [
-            c.chunk_text if hasattr(c, "chunk_text") else c.get("chunk_text", "")
+            c.chunk_text if hasattr(c, "chunk_text") else c.chunk_text
             for c in file_chunks
         ]
         
@@ -102,9 +101,10 @@ async def index_push(
 
         metadatas = [
             {
-                **(c.chunk_metadata if hasattr(c, "chunk_metadata") else c.get("chunk_metadata", {})),
+                **(c.chunk_metadata if hasattr(c, "chunk_metadata") else c.chunk_metadata),
                 "document_id": str(push_request.document_id),
-                "doc_name": doc.doc_name if doc and hasattr(doc, "doc_name") else (doc.get("doc_name") if isinstance(doc, dict) else "document")
+                "doc_name": doc.doc_name if doc and hasattr(doc, "doc_name") else (doc.get("doc_name") if isinstance(doc, dict) else "document"),
+                "embedding_model": embedding_service
             }
             for c in file_chunks
         ]
@@ -212,7 +212,8 @@ async def search_by_vector(
 # -------------------------------------------------------------
 
 @rag.post("/test-prompt", response_model=APIResponce)
-async def test_llm_prompt_endpoint(payload: DirectPromptTestRequest):
+async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRequest):
+    llm_service = request.app.state.llm_service
     try:
         chunks_to_use = payload.context_chunks or MOCK_BENCHMARK_CHUNKS
         answer, latency, citations = await llm_service.generate_rag_response(
