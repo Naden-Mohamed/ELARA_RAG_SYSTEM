@@ -5,7 +5,7 @@ from typing import List, Tuple, cast
 from dotenv import load_dotenv
 from groq import AsyncGroq
 from groq.types.chat import ChatCompletionMessageParam
-
+from models.data_chunk import DataChunk
 from core.config import get_settings
 from core.prompts import (
     BASE_RULES_AR,
@@ -24,7 +24,7 @@ class LLMService:
     def __init__(self):
         settings = get_settings()
         api_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
-        self.client = AsyncGroq(api_key=api_key)
+        self.client = AsyncGroq(api_key= api_key)
         self.model_id = settings.GENERATION_MODEL_ID
         self.temperature = settings.GENERATION_DEFAULT_TEMPERATURE
 
@@ -84,15 +84,17 @@ class LLMService:
         persona: UserPersonaEnum, 
         language: LanguageEnum
     ) -> Tuple[str, float, List[str]]:
+
         system_prompt = self.build_system_prompt(persona, language)
         user_prompt = self.build_user_prompt(query, chunks, language)
 
+        print("user_prompt: ", user_prompt)
         start_time = time.time()
         messages: List[ChatCompletionMessageParam] = [
             cast(ChatCompletionMessageParam, {"role": "system", "content": system_prompt}),
             cast(ChatCompletionMessageParam, {"role": "user", "content": user_prompt}),
         ]
-
+        print(system_prompt, user_prompt)
         response = await self.client.chat.completions.create(
             model=self.model_id,
             messages=messages,
@@ -122,7 +124,8 @@ class LLMService:
         user_prompt = self.build_user_prompt(query, chunks, language)
 
         messages: List[ChatCompletionMessageParam] = [
-            cast(ChatCompletionMessageParam, {"role": "system", "content": system_prompt})
+            cast(ChatCompletionMessageParam, {"role": "system", "content": system_prompt}),
+            cast(ChatCompletionMessageParam, {"role": "user", "content": user_prompt})
         ]
         
         for msg in history:

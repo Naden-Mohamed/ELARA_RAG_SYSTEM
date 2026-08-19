@@ -13,6 +13,8 @@ import logging
 import aiofiles
 from core.config import get_settings
 import os
+from pathlib import Path
+
 
 logger = logging.getLogger(__name__)
 data = APIRouter(tags=["api/data"], prefix="/data")
@@ -75,6 +77,73 @@ async def upload_file(
         status=ResponseStatusEnums.FILE_UPLOADED_SUCCESSFULLY.value,
         data={"document_id": str(doc_id)}
     )
+
+@data.post("/delete_document")                    
+async def delete_document(                   
+    request: Request,
+    document_name: str
+) -> APIResponce:
+    db_client = request.app.state.db_client
+    document_model = await DocumentModel.get_instance(db_client)
+
+    # Delete from MongoDB Atlas
+    document = await document_model.get_document_by_name(document_name)
+
+    if not document:
+        return APIResponce(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            status=ResponseStatusEnums.FILE_NOT_FOUND.value,
+            error="No existing file with this name in MongoDB"
+        )
+    await document_model.delete_document(doc_name=document_name)
+
+    # Delete from local data directory
+    directory_path = Path(DocumentParserService().files_path)
+    search_suffix = f"_{document_name}"
+    matching_files = [f for f in directory_path.iterdir() if f.is_file() and f.name.endswith(search_suffix)]
+
+    if not matching_files:
+        return APIResponce(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            status=ResponseStatusEnums.FILE_NOT_FOUND.value,
+            error="No existing file with this name in local data dir"
+        )
+    
+    for file in matching_files:
+        file.unlink(missing_ok=True)
+
+    return APIResponce(
+        status_code=status.HTTP_200_OK,
+        status=ResponseStatusEnums.FILE_DELETED_SUCCESFULLY.value
+    )
+
+
+@data.get("/list_documents")
+async def list_documents(request: Request) -> APIResponce:
+    db_client = request.app.state.db_client
+    document_model = await DocumentModel.get_instance(db_client)
+    
+ 
+    cursor = document_model.collection.find({})
+    docs = await cursor.to_list(length=100)
+    
+    result = [
+        {
+            "document_id": str(d["_id"]),
+            "doc_name": d.get("doc_name"),
+            "status": d.get("status"),
+            "chunk_count": d.get("chunk_count", 0),
+            "created_at": d.get("created_at")
+        }
+        for d in docs
+    ]
+    
+    return APIResponce(
+        status_code=status.HTTP_200_OK,
+        status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
+        data={"documents": result}
+    )
+
 
 
 @data.post("/ingest")                    
@@ -184,32 +253,27 @@ async def ingest_file(
         status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value
     )
 
-@data.get("/documents")
-async def list_documents(request: Request) -> APIResponce:
+@data.post("/delete_document_chunks")                    
+async def delete_document_chunks(                   
+    request: Request,
+    document_id: str
+) -> APIResponce:
     db_client = request.app.state.db_client
-    document_model = await DocumentModel.get_instance(db_client)
-    
- 
-    cursor = document_model.collection.find({})
-    docs = await cursor.to_list(length=100)
-    
-    result = [
-        {
-            "document_id": str(d["_id"]),
-            "doc_name": d.get("doc_name"),
-            "status": d.get("status"),
-            "chunk_count": d.get("chunk_count", 0),
-            "created_at": d.get("created_at")
-        }
-        for d in docs
-    ]
-    
+    chunk_model = await ChunkModel.get_instance(db_client=db_client)
+
+    deleted_chunks_count = await chunk_model.delete_chunks_by_document_id(document_id=document_id)
+
+    if not deleted_chunks_count:
+        return APIResponce(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ResponseStatusEnums.FILE_CHUNKS_NOT_FOUND.value,
+        )
+
     return APIResponce(
         status_code=status.HTTP_200_OK,
-        status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
-        data={"documents": result}
+        data={"deleted_chunks_count": deleted_chunks_count},
+        status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value
     )
-
 
 @data.get("/ingested")
 async def get_ingested_documents(request: Request) -> APIResponce:
@@ -241,3 +305,5 @@ async def get_ingested_documents(request: Request) -> APIResponce:
         status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
         data={"ingested_documents": data_list}
     )
+
+    

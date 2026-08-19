@@ -36,10 +36,11 @@ class DocumentModel:
     async def delete_document(self, doc_name: str):
          return await self.collection.find_one_and_delete({"doc_name": doc_name})
 
-    async def get_document(self, doc_name: str):
+    async def get_document_by_name(self, doc_name: str):
         record = await self.collection.find_one({"doc_name": doc_name})
         if record:
             return Document(**record)
+
     async def get_document_by_id(self, doc_id: str):
         from bson.objectid import ObjectId
         try:

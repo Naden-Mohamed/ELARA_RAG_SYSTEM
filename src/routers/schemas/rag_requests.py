@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from enum import Enum
+from db.chunk_model import DataChunk
 
 class UserPersonaEnum(str, Enum):
     DOCTOR = "doctor"
@@ -17,6 +18,7 @@ class MockChunkInput(BaseModel):
     page_number: int | str
     section: str
     text: str
+    score:float
 
 class QueryRequest(BaseModel):
     query: str
