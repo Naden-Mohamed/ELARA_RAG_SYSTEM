@@ -54,7 +54,7 @@ def pre_generation_gate(query: str, chunks: List[MockChunkInput]) -> dict:
         return {"allow": False, "reason": "No relevant guideline passages were retrieved."}
 
     settings = get_settings()
-    threshold = getattr(settings, "SIMILARITY_THRESHOLD", 0.45)
+    threshold = getattr(settings, "SIMILARITY_THRESHOLD", 0.60)
     top_score = max((c.score for c in chunks), default=0.0)
     if top_score < threshold:
         return {
@@ -62,7 +62,7 @@ def pre_generation_gate(query: str, chunks: List[MockChunkInput]) -> dict:
             "reason": f"Retrieval confidence below threshold ({top_score:.3f} < {threshold:.3f}).",
         }
 
-    return {"allow": True, "reason": "Deterministic retrieval gate passed."}
+    return {"allow": True, "reason": "Deterministic retrieval gate passed.", "top_score": top_score}
 
 
 def is_model_refusal(answer: str) -> bool:

@@ -265,6 +265,7 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                     "latency_seconds": 0.0,
                     "citations": chunks_to_use,
                     "gate_reason": gate_result["reason"],
+                    "top_score": gate_result["top_score"]
                 }
             )
 
@@ -274,7 +275,7 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
             persona=payload.persona,
             language=payload.language
         )
-        print("answer", answer)
+        print("citations", citations)
 
         validation = validate_grounded_response(answer, citations, chunks_to_use)
         # if not validation["valid"]:
@@ -289,6 +290,7 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                 "persona": payload.persona.value,
                 "language": payload.language.value,
                 "answer": answer,
+                "top_similarity_score": gate_result["top_score"],
                 "latency_seconds": latency,
                 "citations": citations,
                 "is_refusal": validation["is_refusal"],

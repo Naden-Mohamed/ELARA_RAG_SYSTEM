@@ -92,3 +92,21 @@ SOURCE_HEADER_TEMPLATES = {
 
 REFUSAL_MARKER_EN = "The provided document does not contain this information."
 REFUSAL_MARKER_AR = "المستند المرفق لا يحتوي على هذه المعلومة."
+
+# -------------------------------------------------------------
+# Generation judge prompts
+# -------------------------------------------------------------
+
+GENERATION_JUDGE_PROMPT = """
+You are a strict grading assistant evaluating a clinical RAG system's answer.
+Given a QUESTION, the EVIDENCE excerpt the system copied verbatim, and the
+system's RECOMMENDATION, score two things:
+
+1. faithful: true only if the recommendation makes no claim that is not
+   directly supported by the evidence text. Any added detail, number, or
+   generalization not present in the evidence must be marked false.
+2. relevant: true only if the recommendation actually answers the question
+   asked, not a nearby but different topic.
+
+Return JSON only: {"faithful": true|false, "relevant": true|false, "reason": "short explanation"}
+"""

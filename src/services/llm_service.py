@@ -24,7 +24,7 @@ class LLMService:
     def __init__(self):
         settings = get_settings()
         api_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
-        self.client = AsyncGroq(api_key= api_key)
+        self.client = AsyncGroq(api_key=api_key)
         self.model_id = settings.GENERATION_MODEL_ID
         self.temperature = settings.GENERATION_DEFAULT_TEMPERATURE
 
@@ -71,7 +71,8 @@ class LLMService:
                 doc_name=c.doc_name,
                 page_number=c.page_number,
                 section=c.section,
-                text=c.text
+                text=c.text,
+                score = c.score,
             )
 
         prompt_template = USER_PROMPT_TEMPLATES[language]
@@ -94,7 +95,7 @@ class LLMService:
             cast(ChatCompletionMessageParam, {"role": "system", "content": system_prompt}),
             cast(ChatCompletionMessageParam, {"role": "user", "content": user_prompt}),
         ]
-        print(system_prompt, user_prompt)
+
         response = await self.client.chat.completions.create(
             model=self.model_id,
             messages=messages,

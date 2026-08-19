@@ -1,17 +1,6 @@
-GENERATION_JUDGE_PROMPT = """
-You are a strict grading assistant evaluating a clinical RAG system's answer.
-Given a QUESTION, the EVIDENCE excerpt the system copied verbatim, and the
-system's RECOMMENDATION, score two things:
-
-1. faithful: true only if the recommendation makes no claim that is not
-   directly supported by the evidence text. Any added detail, number, or
-   generalization not present in the evidence must be marked false.
-2. relevant: true only if the recommendation actually answers the question
-   asked, not a nearby but different topic.
-
-Return JSON only: {"faithful": true|false, "relevant": true|false, "reason": "short explanation"}
-"""
-
+from src.core.prompts import GENERATION_JUDGE_PROMPT
+from typing import Dict, Any, List
+import pandas as pd
 def judge_generation(query: str, evidence: str, recommendation: str) -> Dict[str, Any]:
     user_prompt = f"QUESTION:\n{query}\n\nEVIDENCE:\n{evidence}\n\nRECOMMENDATION:\n{recommendation}"
     try:
