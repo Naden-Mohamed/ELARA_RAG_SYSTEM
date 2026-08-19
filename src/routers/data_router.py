@@ -87,7 +87,7 @@ async def delete_document(
     document_model = await DocumentModel.get_instance(db_client)
 
     # Delete from MongoDB Atlas
-    document = document_model.get_document_by_name(document_name)
+    document = await document_model.get_document_by_name(document_name)
 
     if not document:
         return APIResponce(

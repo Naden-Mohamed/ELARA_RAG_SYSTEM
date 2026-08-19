@@ -25,10 +25,10 @@ class Settings(BaseSettings):
     FILE_MAX_SIZE_MB: int = 10
     FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512 KB
     USE_SIMPLE_CHUNKER: bool = False
-
+    
         
     # LLM & Embedding Models
-    GROQ_API_KEY: str = ""
+    GROQ_API_KEY: str | None  = None
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"
     BGE_EMBEDDING_MODEL_ID: str ="BAAI/bge-m3"
     BGE_EMBEDDING_MODEL_SIZE: int =1024
@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     GENERATION_DEFAULT_MAX_TOKENS: int = 1000
     GENERATION_DEFAULT_TEMPERATURE: float = 0.1
     TOKENIZER_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
+    SIMILARITY_THRESHOLD: float = 0.45
 
     CROSS_ENCODER_RERANKER: str = "BAAI/bge-reranker-base"
     # JWT Security

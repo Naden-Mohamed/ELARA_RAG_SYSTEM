@@ -211,6 +211,7 @@ class Qdrant:
             return False
 
         try:
+            print("collection",collection_name )
             search_result = await self.client.query_points(
                 collection_name=collection_name,
                 query=vector,

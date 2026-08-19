@@ -1,4 +1,5 @@
 import os
+from bson import ObjectId
 import logging
 from fastapi import APIRouter, Request, status, HTTPException
 from fastapi.responses import HTMLResponse
@@ -8,6 +9,7 @@ from models.enums.ResponceStatusEnum import ResponseStatusEnums
 from models.enums.DocumentStatusEnum import DocumentStatusEnums
 from models.enums.DataBaseEnum import DataBaseEnums
 from models.enums.LLMEnums import DocumentTypeEnum
+from models.data_chunk import DataChunk
 
 from db.document_model import DocumentModel
 from db.chunk_model import ChunkModel
@@ -22,6 +24,7 @@ from routers.schemas.rag_requests import (
     LanguageEnum,
     MockChunkInput
 )
+from core.safety_gate import pre_generation_gate, validate_grounded_response, build_safe_fallback_message
 
 from services.llm_service import LLMService
 from core.config import get_settings
@@ -36,14 +39,16 @@ MOCK_BENCHMARK_CHUNKS = [
         doc_name="WHO_MNH_Care_2025.pdf",
         page_number=4,
         section="Recommendation 1. Birth Preparedness",
-        text="A Birth Preparedness and Complication Readiness (BPCR) plan includes: desired birth location, identifying emergency transport, saving funds, and selecting a continuous birth companion."
+        text="A Birth Preparedness and Complication Readiness (BPCR) plan includes: desired birth location, identifying emergency transport, saving funds, and selecting a continuous birth companion.",
+        score = 0.90
     ),
     MockChunkInput(
         chunk_id="chunk_02",
         doc_name="WHO_MNH_Care_2025.pdf",
         page_number=8,
         section="Recommendation 8. Labour Companionship",
-        text="Continuous companionship during labour improves clinical outcomes and maternal satisfaction. Companions provide emotional and practical support."
+        text="Continuous companionship during labour improves clinical outcomes and maternal satisfaction. Companions provide emotional and practical support.",
+        score = 0.89
     )
 ]
 
@@ -96,7 +101,7 @@ async def index_push(
                 **(c.chunk_metadata if hasattr(c, "chunk_metadata") else c.chunk_metadata),
                 "document_id": str(push_request.document_id),
                 "doc_name": doc.doc_name if doc and hasattr(doc, "doc_name") else (doc.get("doc_name") if isinstance(doc, dict) else "document"),
-                "embedding_model": embedding_service
+                "embedding_model": embedding_service.embedding_model_id
             }
             for c in file_chunks
         ]
@@ -205,40 +210,63 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
     llm_service = request.app.state.llm_service
     try:
         chunks_to_use = payload.context_chunks
-        
+
         if not chunks_to_use:
             vectordb = request.app.state.vectordb
             embedding_service = request.app.state.embedding_service
             query_embeddings = embedding_service.embed_text(payload.query, document_type=DocumentTypeEnum.QUERY.value)
-            
-            # Fixed here: passed limit value directly without keyword argument 'limit='
+
             search_results = await vectordb.search_by_vector(
                 DataBaseEnums.DOCUMENTS_COLLECTION.value,
                 query_embeddings[0],
                 5
             )
-            
-            if search_results and isinstance(search_results, list):
+            print("search_results", search_results)
+
+            if search_results and hasattr(search_results, "points"):
                 chunks_to_use = []
-                for res in search_results:
-                    p_load = res.get("payload", {})
-                    page_nums = p_load.get("page_numbers", [1])
+                for res in search_results.points:
+                    p_load = res.payload or {}
+                    page_nums = p_load["page_numbers"]
                     page_num = page_nums[0] if isinstance(page_nums, list) and page_nums else 1
-                    sections = p_load.get("section_headings", [])
+                    sections = p_load["section_headings"]
                     section_title = sections[0] if isinstance(sections, list) and sections else "General Recommendations"
 
                     chunks_to_use.append(
                         MockChunkInput(
-                            chunk_id=str(res.get("id", "chk_real")),
-                            doc_name=p_load.get("doc_name") or p_load.get("original_filename", "WHO_Guidelines.pdf"),
+                            chunk_id=str(res.id),
+                            doc_name=p_load["original_filename"],
                             page_number=page_num,
                             section=section_title,
-                            text=p_load.get("text", "")
+                            text=p_load["text"],
+                            score=res.score or 0.0
                         )
                     )
-        
+
         if not chunks_to_use:
-            chunks_to_use = MOCK_BENCHMARK_CHUNKS
+            return APIResponce(
+                           status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                           status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
+                           error="No relevant chunks"
+                       )
+        print("========================================================\n\n")
+        print("relevant chunks retured")
+
+        gate_result = pre_generation_gate(payload.query, chunks_to_use)
+        if not gate_result["allow"]:
+            return APIResponce(
+                status_code=status.HTTP_200_OK,
+                status="refused",
+                data={
+                    "query": payload.query,
+                    "persona": payload.persona.value,
+                    "language": payload.language.value,
+                    "answer": build_safe_fallback_message(payload.language),
+                    "latency_seconds": 0.0,
+                    "citations": chunks_to_use,
+                    "gate_reason": gate_result["reason"],
+                }
+            )
 
         answer, latency, citations = await llm_service.generate_rag_response(
             query=payload.query,
@@ -246,6 +274,13 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
             persona=payload.persona,
             language=payload.language
         )
+        print("answer", answer)
+
+        validation = validate_grounded_response(answer, citations, chunks_to_use)
+        # if not validation["valid"]:
+        #     answer = build_safe_fallback_message(payload.language)
+        #     citations = []
+
         return APIResponce(
             status_code=status.HTTP_200_OK,
             status="success",
@@ -255,7 +290,9 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                 "language": payload.language.value,
                 "answer": answer,
                 "latency_seconds": latency,
-                "citations": citations
+                "citations": citations,
+                "is_refusal": validation["is_refusal"],
+                "validation_reason": validation["reason"],
             }
         )
     except Exception as e:
