@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from core.config import get_settings
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -7,7 +7,7 @@ from logging import getLogger
 # Routers
 from routers import base_router, data_router, rag_router
 from routers.auth_router import auth_router
-from routers.chat_router import chat_router
+from routers.chat_router import chat_router, GuestAskRequest, guest_ask_message
 
 # Vector DB & Services
 from db.qdrant_vectordb import Qdrant
@@ -53,6 +53,30 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# --- مسارات الفرونت إند ---
+
+@app.get("/api/healthz")
+def health_check():
+    return {"status": "ok"}
+
+@app.get("/api/rag/stats")
+def get_stats():
+    return {"indexedSources": 1, "indexedChunks": 100, "evaluation": None}
+
+@app.get("/api/rag/sources")
+def get_sources():
+    return []
+
+@app.get("/api/rag/evaluation")
+def get_evaluation():
+    return {"summary": None, "results": []}
+
+@app.post("/api/rag/ask")
+async def frontend_ask_endpoint(payload: GuestAskRequest, request: Request):
+    return await guest_ask_message(payload, request)
+
+# -------------------------
 
 # Register All Routers
 app.include_router(base_router.base)

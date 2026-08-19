@@ -18,7 +18,6 @@ class Qdrant:
         self.settings = get_settings()
         raw_url = self.settings.QDRANT_URL.strip() if self.settings.QDRANT_URL else "http://127.0.0.1:6333"
         
-        # Ensure scheme exists to prevent client hang
         if not raw_url.startswith("http://") and not raw_url.startswith("https://"):
             raw_url = f"http://{raw_url}"
             
@@ -109,11 +108,9 @@ class Qdrant:
                         distance=self.distance_metric
                     )
                 },
-
                 sparse_vectors_config={
                     "sparse": models.SparseVectorParams(modifier=models.Modifier.IDF)
                 }
-
             )
             print(f"Collection '{collection_name}' created with size {embedding_size}.")
             self.logger.info(f"Collection '{collection_name}' created with size {embedding_size}.")
@@ -204,14 +201,19 @@ class Qdrant:
     async def search_by_vector(self, collection_name: str, vector: list, top_k: int = 5):
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
-            return False
+            return None
         
         if not await self.is_collection_exists(collection_name=collection_name):
-            self.logger.error(f"Collection '{collection_name}' doesn't exist")
-            return False
+            self.logger.warning(f"Collection '{collection_name}' doesn't exist. Creating it automatically.")
+            created = await self.create_collection(
+                collection_name=collection_name, 
+                embedding_size=self.settings.BGE_EMBEDDING_MODEL_SIZE, 
+                do_reset=0
+            )
+            if not created:
+                return None
 
         try:
-            print("collection",collection_name )
             search_result = await self.client.query_points(
                 collection_name=collection_name,
                 query=vector,

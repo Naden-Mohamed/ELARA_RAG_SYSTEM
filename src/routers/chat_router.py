@@ -20,8 +20,12 @@ class SendMessageRequest(BaseModel):
     language: LanguageEnum = LanguageEnum.AR
 
 
+class GuestAskRequest(BaseModel):
+    question: str
+    language: str = "auto"
+
+
 async def _retrieve_chunks(request: Request, query: str, top_k: int = 5) -> list[MockChunkInput]:
-    """Direct retrieval -- no self-HTTP call, no event-loop blocking."""
     embedding_service = request.app.state.embedding_service
     vectordb = request.app.state.vectordb
 
@@ -57,6 +61,50 @@ async def _retrieve_chunks(request: Request, query: str, top_k: int = 5) -> list
             )
         )
     return chunks
+
+
+@chat_router.post("/ask")
+async def guest_ask_message(payload: GuestAskRequest, request: Request):
+    llm_service = request.app.state.llm_service
+    chunks = await _retrieve_chunks(request, payload.question)
+    gate_result = pre_generation_gate(payload.question, chunks)
+    
+    abstained = False
+    latency = 0.0
+    citations = []
+    
+    if not gate_result["allow"]:
+        answer = build_safe_fallback_message(payload.language)
+        abstained = True
+    else:
+        mapped_language = LanguageEnum.EN if payload.language == "en" else LanguageEnum.AR
+        answer, latency, citations = await llm_service.generate_chat_response(
+            query=payload.question,
+            chunks=chunks,
+            persona=UserPersonaEnum.MOTHER,
+            language=mapped_language,
+            history=[],
+            mother_profile=None,
+            dynamic_memories=None
+        )
+        validation = validate_grounded_response(answer, citations, chunks)
+        if not validation["valid"]:
+            answer = build_safe_fallback_message(payload.language)
+            citations = []
+            abstained = True
+
+    return {
+        "answer": answer,
+        "language": payload.language,
+        "abstained": abstained,
+        "trace": {
+            "method": "hybrid",
+            "latencyMs": int(latency * 1000) if latency else 0,
+            "confidence": "high",
+            "indexedChunks": len(chunks)
+        },
+        "citations": citations
+    }
 
 
 @chat_router.post("/send", response_model=APIResponce)
