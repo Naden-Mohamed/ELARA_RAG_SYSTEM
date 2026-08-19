@@ -85,10 +85,3 @@ SOURCE_HEADER_TEMPLATES = {
     LanguageEnum.AR: "--- [المصدر #{idx}] ---\nالمستند: {doc_name} | ص: {page_number} | القسم: {section}\nالمحتوى: {text}\n\n",
     LanguageEnum.EN: "--- [SOURCE #{idx}] ---\nDoc: {doc_name} | Page: {page_number} | Sec: {section}\nContent: {text}\n\n"
 }
-
-# -------------------------------------------------------------
-# Refusal prompts
-# -------------------------------------------------------------
-
-REFUSAL_MARKER_EN = "The provided document does not contain this information."
-REFUSAL_MARKER_AR = "المستند المرفق لا يحتوي على هذه المعلومة."

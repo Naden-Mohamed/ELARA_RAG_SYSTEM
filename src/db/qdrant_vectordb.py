@@ -53,6 +53,8 @@ class Qdrant:
 
             await self.client.get_collections()
 
+            print("QDRANT URL:", repr(self.url))
+            print("API KEY EXISTS:", bool(self.api_key))
         except Exception as e:
             self.logger.exception("Cannot connect to Qdrant")
             self.client = None
@@ -211,7 +213,6 @@ class Qdrant:
             return False
 
         try:
-            print("collection",collection_name )
             search_result = await self.client.query_points(
                 collection_name=collection_name,
                 query=vector,

@@ -15,9 +15,8 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 
 TOP_K_CONFIGS = [3, 5, 10]
 CHUNK_CONFIGS = ["docling_hierarchical_512", "sentence_chunker_300"]
-EMBEDDING_MODELS = ["sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "BAAI/bge-m3"]
+EMBEDDING_MODELS = ["sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"]
 
- # Test with diff chunk size and overlap
 def evaluate_relevance(retrieved_chunk: dict, case: dict) -> bool:
     if case.get("is_failure_case", False):
         return False
@@ -38,7 +37,7 @@ def evaluate_relevance(retrieved_chunk: dict, case: dict) -> bool:
         
     keyword_matches = sum(1 for kw in expected_keywords if kw.lower() in text)
     
-    return keyword_matches > 0 or page_match or score_match # Score thresholding
+    return keyword_matches > 0 or page_match or score_match
 
 def run_evaluation_pipeline():
     with open(DATASET_PATH, "r", encoding="utf-8") as f:
@@ -129,7 +128,6 @@ def run_evaluation_pipeline():
                         prec_k = relevant_count / k if k > 0 else 0
                         recall = relevant_count / len(target_results) if len(target_results) > 0 else 0
                         mrr = 1.0 / first_relevant_rank if first_relevant_rank > 0 else 0.0
-
 
                         writer.writerow({
                             "run_id": run_id,

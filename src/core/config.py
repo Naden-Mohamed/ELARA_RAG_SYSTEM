@@ -3,20 +3,20 @@ from typing import List
 from functools import lru_cache
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_PATH = BASE_DIR / ".env"
 
 class Settings(BaseSettings):
     APP_NAME: str = "ELARA"
-    BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
-    ENV_PATH: Path = BASE_DIR / "src" / ".env"
 
     # MongoDB Atlas
-    MONGODB_URI: str | None = None
+    MONGODB_URI: str
     MONGODB_DB_NAME: str = "ai_projects"
     COLLECTION_NAME: str = "ELARA"
 
     # Qdrant Vector DB
-    QDRANT_API_KEY: str | None = None
-    QDRANT_URL: str | None = None
+    QDRANT_API_KEY: str = ""
+    QDRANT_URL: str = ""
     DENSE_VECTOR_NAME: str = "dense_vector"
     SPARSE_VECTOR_NAME: str = "sparse_vector"
 
@@ -25,15 +25,15 @@ class Settings(BaseSettings):
     FILE_MAX_SIZE_MB: int = 10
     FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512 KB
     USE_SIMPLE_CHUNKER: bool = False
-    
+
         
     # LLM & Embedding Models
-    GROQ_API_KEY: str | None  = None
+    GROQ_API_KEY: str = ""
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"
-    BGE_EMBEDDING_MODEL_ID: str ="BAAI/bge-m3"
-    BGE_EMBEDDING_MODEL_SIZE: int =1024
-    MiniLM_EMBEDDING_MODEL_ID: str ="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" 
-    MiniLM_EMBEDDING_MODEL_SIZE: int =384
+    BGE_EMBEDDING_MODEL_ID="BAAI/bge-m3"
+    BGE_EMBEDDING_MODEL_SIZE=1024
+    MiniLM_EMBEDDING_MODEL_ID="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" 
+    MiniLM_EMBEDDING_MODEL_SIZE=384
     GENERATION_BACKEND: str = "GROQ"
     EMBEDDING_BACKEND: str = "BGE"
 
@@ -41,7 +41,6 @@ class Settings(BaseSettings):
     GENERATION_DEFAULT_MAX_TOKENS: int = 1000
     GENERATION_DEFAULT_TEMPERATURE: float = 0.1
     TOKENIZER_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
-    SIMILARITY_THRESHOLD: float = 0.45
 
     CROSS_ENCODER_RERANKER: str = "BAAI/bge-reranker-base"
     # JWT Security

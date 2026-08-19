@@ -6,6 +6,9 @@ async def main():
     settings = get_settings()
     QDRANT_URL = settings.QDRANT_URL
     QDRANT_API_KEY = settings.QDRANT_API_KEY
+    
+    print("URL:", QDRANT_URL)
+    print("API key exists:", bool(QDRANT_API_KEY))
 
     client = AsyncQdrantClient(
         url=QDRANT_URL,
@@ -14,7 +17,6 @@ async def main():
     )
     print("QDRANT URL:", repr(QDRANT_URL))
     print("API KEY EXISTS:", bool(QDRANT_API_KEY))
-    print(".env path:", settings.ENV_PATH)
     try:
         collections = await client.get_collections()
         print("SUCCESS")

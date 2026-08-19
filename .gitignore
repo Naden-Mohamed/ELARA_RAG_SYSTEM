@@ -9,4 +9,3 @@ randoms.txt
 data/*.pdf
 lab_evaluation.py
 .env
-.pytest_cache

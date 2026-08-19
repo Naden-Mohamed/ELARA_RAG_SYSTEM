@@ -1,15 +1,11 @@
-import asyncio
-
 from fastapi import APIRouter, Request, Depends, status, Query
 from pydantic import BaseModel
+import requests
 
 from models.api_responce import APIResponce
-from models.enums.LLMEnums import DocumentTypeEnum
-from models.enums.DataBaseEnum import DataBaseEnums
 from routers.auth_router import get_current_user
 from routers.schemas.rag_requests import UserPersonaEnum, LanguageEnum, MockChunkInput
 from db.chat_model import ChatModel
-from core.safety_gate import pre_generation_gate, validate_grounded_response, build_safe_fallback_message
 
 chat_router = APIRouter(tags=["Chat & Memory"], prefix="/chat")
 
@@ -18,45 +14,6 @@ class SendMessageRequest(BaseModel):
     query: str
     chat_id: str | None = None
     language: LanguageEnum = LanguageEnum.AR
-
-
-async def _retrieve_chunks(request: Request, query: str, top_k: int = 5) -> list[MockChunkInput]:
-    """Direct retrieval -- no self-HTTP call, no event-loop blocking."""
-    embedding_service = request.app.state.embedding_service
-    vectordb = request.app.state.vectordb
-
-    embeddings = await asyncio.to_thread(
-        embedding_service.embed_text, query, DocumentTypeEnum.QUERY.value
-    )
-    if embeddings is None or len(embeddings) == 0:
-        return []
-
-    query_vector = embeddings[0]
-    query_vector = query_vector.tolist() if hasattr(query_vector, "tolist") else list(query_vector)
-
-    results = await vectordb.search_by_vector(DataBaseEnums.DOCUMENTS_COLLECTION.value, query_vector, top_k)
-    if not results or not getattr(results, "points", None):
-        return []
-
-    chunks = []
-    for point in results.points:
-        p_load = point.payload or {}
-        page_nums = p_load.get("page_numbers", [1])
-        page_num = page_nums[0] if isinstance(page_nums, list) and page_nums else 1
-        sections = p_load.get("section_headings", [])
-        section_title = sections[0] if isinstance(sections, list) and sections else "General Recommendations"
-
-        chunks.append(
-            MockChunkInput(
-                chunk_id=str(point.id),
-                doc_name=p_load.get("doc_name") or p_load.get("original_filename", "WHO_Guidelines.pdf"),
-                page_number=page_num,
-                section=section_title,
-                text=p_load.get("text", ""),
-                score=point.score or 0.0
-            )
-        )
-    return chunks
 
 
 @chat_router.post("/send", response_model=APIResponce)
@@ -69,33 +26,68 @@ async def send_chat_message(
     llm_service = request.app.state.llm_service
     chat_model = ChatModel(db)
     user_id = str(current_user["_id"])
-
+    
     chat_id = payload.chat_id or await chat_model.get_or_create_chat(user_id)
     recent_history = await chat_model.get_recent_messages(chat_id, limit=6)
-
+    
     mother_profile = current_user.get("mother_profile")
     dynamic_memories = await chat_model.get_active_clinical_memory(user_id)
+    
+    chunks = []
+    try:
+        base_url = str(request.base_url).rstrip("/")
+        search_payload = {
+            "text": payload.query,
+            "limit": 5
+        }
+        
+        response = requests.post(f"{base_url}/rag/search", json=search_payload, timeout=30)
+        
+        if response.status_code == 200:
+            res_json = response.json()
+            if res_json and "data" in res_json:
+                search_data = res_json["data"].get("search_results", {})
+                points = search_data.get("points", []) if isinstance(search_data, dict) else search_data
+                
+                for point in points:
+                    p_load = point.get("payload", {})
+                    page_nums = p_load.get("page_numbers", [1])
+                    page_num = page_nums[0] if isinstance(page_nums, list) and page_nums else 1
+                    sections = p_load.get("section_headings", [])
+                    section_title = sections[0] if isinstance(sections, list) and sections else "General Recommendations"
 
-    chunks = await _retrieve_chunks(request, payload.query)
+                    chunks.append(
+                        MockChunkInput(
+                            chunk_id=str(point.get("id", "chk_real")),
+                            doc_name=p_load.get("doc_name") or p_load.get("original_filename", "WHO_Guidelines.pdf"),
+                            page_number=page_num,
+                            section=section_title,
+                            text=p_load.get("text", "")
+                        )
+                    )
+    except Exception as e:
+        print(f"Error calling internal rag search endpoint: {e}")
+        
+    if not chunks:
+        chunks = [
+            MockChunkInput(
+                chunk_id="chk_fallback",
+                doc_name="WHO_Guidelines.pdf",
+                page_number=1,
+                section="General",
+                text="No matching content was found in the available medical documents."
+            )
+        ]
 
-    gate_result = pre_generation_gate(payload.query, chunks)
-    if not gate_result["allow"]:
-        answer = build_safe_fallback_message(payload.language)
-        citations, latency = [], 0.0
-    else:
-        answer, latency, citations = await llm_service.generate_chat_response(
-            query=payload.query,
-            chunks=chunks,
-            persona=UserPersonaEnum(current_user.get("persona", "mother")),
-            language=payload.language,
-            history=recent_history,
-            mother_profile=mother_profile,
-            dynamic_memories=dynamic_memories
-        )
-        validation = validate_grounded_response(answer, citations, chunks)
-        if not validation["valid"]:
-            answer = build_safe_fallback_message(payload.language)
-            citations = []
+    answer, latency, citations = await llm_service.generate_chat_response(
+        query=payload.query,
+        chunks=chunks,
+        persona=UserPersonaEnum(current_user.get("persona", "mother")),
+        language=payload.language,
+        history=recent_history,
+        mother_profile=mother_profile,
+        dynamic_memories=dynamic_memories
+    )
 
     await chat_model.add_message(chat_id, user_id, "user", payload.query)
     await chat_model.add_message(chat_id, user_id, "assistant", answer, citations, latency)
@@ -110,6 +102,7 @@ async def send_chat_message(
             "latency_seconds": latency
         }
     )
+
 
 @chat_router.get("/my-chats", response_model=APIResponce)
 async def list_user_chats(

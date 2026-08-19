@@ -9,7 +9,7 @@ class Document(BaseModel):
     doc_name: str | None = None
     doc_path: str | None = None
     doc_type: str | None = None
-    doc_size: float | None = None
+    doc_size: int | None = None
     doc_metadata: dict = {}
     status: str = DocumentStatusEnums.PENDING.value
     chunk_count: int | None = None
