@@ -10,7 +10,7 @@ class DataChunk(BaseModel):
     chunk_order: int = Field(..., gt=0)
     chunk_document_id: ObjectId
 
-    class ConfigDict:
+    class Config:
         arbitrary_types_allowed = True
 
     @classmethod
