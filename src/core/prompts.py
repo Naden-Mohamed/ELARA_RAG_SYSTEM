@@ -110,3 +110,13 @@ system's RECOMMENDATION, score two things:
 
 Return JSON only: {"faithful": true|false, "relevant": true|false, "reason": "short explanation"}
 """
+
+CLINICAL_SAFETY_DISCLAIMER_EN = (
+    "This information is derived from clinical guideline documents and is not a substitute "
+    "for professional medical advice, diagnosis, or treatment. Always consult a qualified "
+    "healthcare provider for decisions about your specific care."
+)
+CLINICAL_SAFETY_DISCLAIMER_AR = (
+    "هذه المعلومات مستمدة من وثائق إرشادية سريرية ولا تغني عن الاستشارة الطبية المتخصصة أو "
+    "التشخيص أو العلاج. يُرجى دائمًا استشارة مقدم رعاية صحية مؤهل لاتخاذ القرارات الخاصة بحالتك."
+)

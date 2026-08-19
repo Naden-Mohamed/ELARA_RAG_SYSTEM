@@ -18,12 +18,9 @@ from routers.schemas.data_requests import SearchRequest, PushRequest
 from routers.schemas.rag_requests import (
     QueryRequest, 
     DirectPromptTestRequest, 
-    RAGResponseData, 
-    RetrievedChunkDTO,
-    UserPersonaEnum,
-    LanguageEnum,
     MockChunkInput
 )
+from core.risk_classifier import classify_input_risk, RiskLevel
 from core.safety_gate import pre_generation_gate, validate_grounded_response, build_safe_fallback_message
 
 from services.llm_service import LLMService
@@ -184,20 +181,26 @@ async def search_by_vector(
 ):
     vectordb = request.app.state.vectordb
     embedding_service = request.app.state.embedding_service 
-    query_embeddings = embedding_service.embed_text(search_request.text, document_type=DocumentTypeEnum.QUERY.value)
 
-    results = await vectordb.search_by_vector(
-        DataBaseEnums.DOCUMENTS_COLLECTION.value,
-        query_embeddings[0],
-        search_request.limit
-    )
+    risk = classify_input_risk(search_request.text)
 
-    if not results:
-        return APIResponce(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
-            error="No search results"
+    if risk["risk_level"] == RiskLevel.UNSAFE:
+        answer = build_safe_fallback_message("en")
+        citations, latency = [], 0.0
+    else:   
+        query_embeddings = embedding_service.embed_text(search_request.text, document_type=DocumentTypeEnum.QUERY.value)
+        results = await vectordb.search_by_vector(
+            DataBaseEnums.DOCUMENTS_COLLECTION.value,
+            query_embeddings[0],
+            search_request.limit
         )
+
+        if not results:
+            return APIResponce(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
+                error="No search results"
+            )
 
     return APIResponce(
         status_code=status.HTTP_200_OK,
@@ -208,6 +211,25 @@ async def search_by_vector(
 @rag.post("/test-prompt", response_model=APIResponce)
 async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRequest):
     llm_service = request.app.state.llm_service
+
+    risk = classify_input_risk(payload.query)
+    if risk["risk_level"] !=RiskLevel.SAFE and risk["risk_level"] in RiskLevel:
+        answer = build_safe_fallback_message(payload.language)
+        citations, latency = [], 0.0
+
+        return APIResponce(
+            status_code=status.HTTP_403_FORBIDDEN,
+            status=risk["risk_level"],
+            data={
+                "query": payload.query,
+                "persona": payload.persona.value,
+                "language": payload.language.value,
+                "latency_seconds": latency,
+                "citations": citations,
+            },
+            error = risk["reason"]
+        )
+
     try:
         chunks_to_use = payload.context_chunks
 
@@ -221,7 +243,6 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                 query_embeddings[0],
                 5
             )
-            print("search_results", search_results)
 
             if search_results and hasattr(search_results, "points"):
                 chunks_to_use = []
@@ -242,15 +263,13 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                             score=res.score or 0.0
                         )
                     )
+            else:
+                return APIResponce(
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
+                            error="No relevant chunks"
+                        )
 
-        if not chunks_to_use:
-            return APIResponce(
-                           status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                           status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
-                           error="No relevant chunks"
-                       )
-        print("========================================================\n\n")
-        print("relevant chunks retured")
 
         gate_result = pre_generation_gate(payload.query, chunks_to_use)
         if not gate_result["allow"]:
@@ -303,7 +322,8 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
             status="failed",
             error=str(e)
         )
-
+# why local cooling, such as with ice packs or cold pads could be offered to woman?
+#what are not recommended in the postpartum period?
 @rag.get("/playground", response_class=HTMLResponse)
 async def rag_playground_ui():
     html_content = """
