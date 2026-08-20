@@ -6,66 +6,15 @@ from statistics import mean
 from typing import Any
 
 from main import app
-
+from .common import DATASET_PATH, load_evaluation_cases
 
 COLLECTION_NAME = "ELARA"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DATASET_PATH = SCRIPT_DIR / "evaluation_cases.jsonl" 
 
 THRESHOLD_MIN = 0.30
 THRESHOLD_MAX = 0.90
 THRESHOLD_STEP = 0.01
-
-
-def load_dataset(path: Path) -> list[dict[str, Any]]:
-    """
-    Supports both:
-        - JSON array
-        - JSONL
-    """
-
-    text = path.read_text(encoding="utf-8").strip()
-
-    if path.suffix == ".json":
-        return json.loads(text)
-
-    if not text:
-        return []
-
-    # JSON array
-    if text.startswith("["):
-        data = json.loads(text)
-
-        if not isinstance(data, list):
-            raise ValueError(
-                "Evaluation dataset must contain a JSON list."
-            )
-
-        return data
-
-    # JSONL
-    cases = []
-
-    for line_number, line in enumerate(
-        text.splitlines(),
-        start=1,
-    ):
-        line = line.strip()
-
-        if not line:
-            continue
-
-        try:
-            cases.append(
-                json.loads(line)
-            )
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                f"Invalid JSON on line {line_number}: {exc}"
-            ) from exc
-
-    return cases
 
 
 async def get_top_score(
@@ -346,7 +295,7 @@ async def calibrate(
 
 async def main():
 
-    eval_cases = load_dataset(
+    eval_cases = load_evaluation_cases(
         DATASET_PATH
     )
 

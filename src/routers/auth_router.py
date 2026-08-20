@@ -15,21 +15,13 @@ security = HTTPBearer()
 
 # Dependency to get the current authenticated user
 async def get_current_user(request: Request, creds: HTTPAuthorizationCredentials = Depends(security)):
-    token = creds.credentials
-    payload = decode_access_token(token)
+    payload = decode_access_token(creds.credentials)
     if not payload or "sub" not in payload:
-        return APIResponce(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            status="failed",
-            error="Invalid or expired authentication credentials."
-        )
-    
-    user_model = UserModel(request.app.state.db_client)
-    user = await user_model.get_by_id(payload["sub"])
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication credentials.")
+    user = await UserModel(request.app.state.db_client).get_by_id(payload["sub"])
     if not user:
-        return APIResponce(status_code=status.HTTP_404_NOT_FOUND,status="failed", error="User not found.")
+        raise HTTPException(status_code=404, detail="User not found.")
     return user
-
 
 @auth_router.post("/register", response_model=APIResponce)
 async def register(request: Request, payload: UserRegisterRequest):
@@ -46,7 +38,7 @@ async def register(request: Request, payload: UserRegisterRequest):
         )
 
     # Hash Password and Prepare Document
-    user_dict = payload.dict()
+    user_dict = payload.model_dump()
     raw_password = user_dict.pop("password")
     user_dict["hashed_password"] = get_password_hash(raw_password)
 

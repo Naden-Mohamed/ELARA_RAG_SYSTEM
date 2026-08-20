@@ -1,56 +1,311 @@
-from src.core.prompts import GENERATION_JUDGE_PROMPT
-from typing import Dict, Any, List
+from __future__ import annotations
+
+import json
+import os
+import time
+from pathlib import Path
+from typing import Any
+
 import pandas as pd
-def judge_generation(query: str, evidence: str, recommendation: str) -> Dict[str, Any]:
-    user_prompt = f"QUESTION:\n{query}\n\nEVIDENCE:\n{evidence}\n\nRECOMMENDATION:\n{recommendation}"
+import requests
+
+from ..common import (
+    DATASET_PATH,
+    load_evaluation_cases,
+)
+
+
+API_URL = os.getenv(
+    "ELARA_GENERATION_URL",
+    "http://127.0.0.1:8000/rag/test-prompt",
+)
+
+RESULTS_DIR = (
+    Path(__file__).resolve().parent
+    / "results"
+)
+
+
+def call_generation_api(
+    case: dict[str, Any],
+) -> tuple[dict[str, Any], float]:
+
+    payload = {
+        "query": case["query"],
+        "persona": case.get(
+            "persona",
+            "general",
+        ),
+        "language": "en",
+        "context_chunks": [],
+    }
+
+    started = time.perf_counter()
+
+    response = requests.post(
+        API_URL,
+        json=payload,
+        timeout=120,
+    )
+
+    latency = (
+        time.perf_counter()
+        - started
+    )
+
+    response.raise_for_status()
+
+    return response.json(), latency
+
+
+def extract_status(
+    body: dict[str, Any],
+) -> str:
+
+    return str(
+        body.get(
+            "status",
+            body.get(
+                "data",
+                {},
+            ).get(
+                "status",
+                "unknown",
+            ),
+        )
+    )
+
+
+def extract_data(
+    body: dict[str, Any],
+) -> dict[str, Any]:
+
+    data = body.get(
+        "data",
+        {},
+    )
+
+    return (
+        data
+        if isinstance(data, dict)
+        else {}
+    )
+
+
+def evaluate_case(
+    case: dict[str, Any],
+) -> dict[str, Any]:
+
     try:
-        result = call_json_model(GENERATION_JUDGE_PROMPT, user_prompt)
+
+        body, latency = call_generation_api(
+            case
+        )
+
+        status = extract_status(
+            body
+        )
+
+        data = extract_data(
+            body
+        )
+
+        expected_status = case.get(
+            "expected_status"
+        )
+
+        # Your endpoint currently returns:
+        #
+        # status="success"
+        #
+        # for successful generation.
+        #
+        # Therefore translate it into
+        # the evaluation vocabulary.
+
+        if (
+            expected_status == "answered"
+            and status == "success"
+        ):
+            normalized_status = "answered"
+
+        elif (
+            expected_status == "refuse"
+            and status == "refused"
+        ):
+            normalized_status = "refuse"
+
+        else:
+            normalized_status = status
+
         return {
-            "faithful": bool(result.get("faithful", False)),
-            "relevant": bool(result.get("relevant", False)),
-            "reason": str(result.get("reason", "")).strip(),
+            "id": case["id"],
+            "category": case.get(
+                "category"
+            ),
+            "query": case["query"],
+            "expected_status": expected_status,
+            "actual_api_status": status,
+            "normalized_status": normalized_status,
+            "status_correct": (
+                normalized_status
+                == expected_status
+            ),
+            "answer": data.get(
+                "answer",
+                "",
+            ),
+            "is_refusal": data.get(
+                "is_refusal",
+                False,
+            ),
+            "validation_reason": data.get(
+                "validation_reason",
+                "",
+            ),
+            "gate_reason": data.get(
+                "gate_reason",
+                "",
+            ),
+            "top_similarity_score": data.get(
+                "top_similarity_score"
+            ),
+            "latency_seconds": latency,
+            "error": "",
         }
+
     except Exception as exc:
-        return {"faithful": False, "relevant": False, "reason": f"Judge call failed: {exc}"}
 
-def run_generation_eval(dataset: List[Dict[str, Any]]) -> pd.DataFrame:
-    rows = []
-    for item in dataset:
-        result = run_pipeline(item["query"], audience=None, top_k=TOP_K, run_llm_evidence_gate=True)
-        status = result["status"]
-        expected = item["expected_status"]
-
-        row = {
-            "id": item.get("id"),
-            "query": item["query"],
-            "expected_status": expected,
-            "actual_status": status,
-            "status_correct": status == expected,
-            "validation_failed": "grounding/citation validation" in result["reason"],
-            "faithful": None,
-            "relevant_judge": None,
-            "relevant_overlap": None,
+        return {
+            "id": case["id"],
+            "category": case.get(
+                "category"
+            ),
+            "query": case["query"],
+            "expected_status": case.get(
+                "expected_status"
+            ),
+            "actual_api_status": "error",
+            "normalized_status": "error",
+            "status_correct": False,
+            "answer": "",
+            "is_refusal": None,
+            "validation_reason": "",
+            "gate_reason": "",
+            "top_similarity_score": None,
+            "latency_seconds": None,
+            "error": str(exc),
         }
 
-        if status == "answered":
-            resp = result["response"]
-            judge = judge_generation(item["query"], resp.evidence, resp.recommendation)
-            row["faithful"] = judge["faithful"]
-            row["relevant_judge"] = judge["relevant"]
-            row["judge_reason"] = judge["reason"]
-            if item.get("ground_truth"):
-                row["relevant_overlap"] = compute_precision_at_k(
-                    [{"text": resp.recommendation}], item["ground_truth"], k=1
-                )
+
+def run_generation_eval() -> None:
+
+    RESULTS_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    cases = load_evaluation_cases(
+        DATASET_PATH
+    )
+
+    rows = []
+
+    print(
+        f"Loaded {len(cases)} evaluation cases."
+    )
+
+    for index, case in enumerate(
+        cases[10:20],
+        start=1,
+    ):
+
+        print(
+            f"[{index}/{len(cases)}] "
+            f"{case['id']}"
+        )
+
+        row = evaluate_case(
+            case
+        )
 
         rows.append(row)
 
-    return pd.DataFrame(rows)
+    dataframe = pd.DataFrame(
+        rows
+    )
+
+    output_path = (
+        RESULTS_DIR
+        / "generation_results.csv"
+    )
+
+    dataframe.to_csv(
+        output_path,
+        index=False,
+    )
+
+    accuracy = dataframe[
+        "status_correct"
+    ].mean()
+
+    print(
+        "\nGeneration Evaluation"
+    )
+
+    print(
+        f"Status accuracy: "
+        f"{accuracy:.4f}"
+    )
+
+    print(
+        "\nBy category:"
+    )
+
+    print(
+        dataframe
+        .groupby("category")[
+            "status_correct"
+        ]
+        .mean()
+    )
+
+    answered = dataframe[
+        dataframe["expected_status"]
+        == "answered"
+    ]
+
+    if not answered.empty:
+
+        print(
+            "\nAnswered cases:"
+        )
+
+        print(
+            f"Correct status: "
+            f"{answered['status_correct'].mean():.4f}"
+        )
+
+    refusal = dataframe[
+        dataframe["expected_status"]
+        == "refuse"
+    ]
+
+    if not refusal.empty:
+
+        print(
+            "\nRefusal cases:"
+        )
+
+        print(
+            f"Correct refusal: "
+            f"{refusal['status_correct'].mean():.4f}"
+        )
+
+    print(
+        f"\nResults: {output_path}"
+    )
 
 
-generation_eval = run_generation_eval(eval_dataset + labeled_failure_cases)
-print("Refusal/answer status accuracy:", generation_eval["status_correct"].mean())
-answered = generation_eval[generation_eval["actual_status"] == "answered"]
-print("Citation-validation clean-pass rate:", 1 - generation_eval["validation_failed"].mean())
-print("Faithfulness rate:", answered["faithful"].mean())
-print("Judge-relevance rate:", answered["relevant_judge"].mean())
+if __name__ == "__main__":
+    run_generation_eval()

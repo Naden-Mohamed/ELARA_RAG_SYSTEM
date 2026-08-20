@@ -71,7 +71,7 @@ class EmbeddingService:
 
         try:
             text = [self.process_text(t) for t in text]
-            print(text)
+            self.logger.debug(text)
 
             # bge-multilingual-gemma2 uses instruction-based embedding
             # document_type differentiates query vs passage for better accuracy

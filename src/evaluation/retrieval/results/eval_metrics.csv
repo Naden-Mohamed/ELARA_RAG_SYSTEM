@@ -1,1 +1,0 @@
-run_id,timestamp,chunk_config,embedding_model,top_k,query_id,query,is_failure_case,failure_mode,precision_at_k,recall,reciprocal_rank,chunk_id,document_id,page,section,retrieved_chunks_json

@@ -1,14 +1,23 @@
-# src/evaluation/retrieval/run_retrieval_eval.py
+from __future__ import annotations
 
-import csv
 import json
 import os
-from datetime import datetime
+import time
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import requests
+
+from evaluation.common import (
+    DATASET_PATH,
+    get_document_name,
+    get_pages,
+    get_sections,
+    keyword_coverage,
+    load_evaluation_cases,
+    normalize_text,
+)
 
 
 API_URL = os.getenv(
@@ -16,248 +25,38 @@ API_URL = os.getenv(
     "http://127.0.0.1:8000/rag/search",
 )
 
-DATASET_PATH = Path(
-    os.getenv(
-        "ELARA_EVAL_DATASET",
-        "src/evaluation/retrieval/dataset/evaluation_cases.jsonl",
-    )
+RESULTS_DIR = (
+    Path(__file__).resolve().parent
+    / "results"
 )
 
-RESULTS_DIR = Path(
-    "src/evaluation/retrieval/results"
-)
-
-METRICS_CSV = (
-    RESULTS_DIR
-    / "eval_metrics.csv"
-)
-
-SUMMARY_CSV = (
-    RESULTS_DIR
-    / "eval_summary.csv"
-)
-
-TOP_K_CONFIGS = [3, 5, 10]
+TOP_K_VALUES = [
+    1,
+    3,
+    5,
+    10,
+]
 
 
 # ============================================================
-# DATASET
+# RETRIEVAL GROUND TRUTH
 # ============================================================
 
-def load_dataset(
-    path: Path,
-) -> list[dict[str, Any]]:
-
-    text = path.read_text(
-        encoding="utf-8"
-    ).strip()
-
-    if not text:
-        return []
-
-    if text.startswith("["):
-        return json.loads(text)
-
-    return [
-        json.loads(line)
-        for line in text.splitlines()
-        if line.strip()
-    ]
-
-
-# ============================================================
-# NORMALIZATION
-# ============================================================
-
-def normalize_text(
-    text: Any,
-) -> str:
-
-    if text is None:
-        return ""
-
-    return " ".join(
-        str(text)
-        .lower()
-        .split()
-    )
-
-
-def get_pages(
-    payload: dict,
-) -> list[int]:
-
-    pages = payload.get(
-        "page_numbers",
-        payload.get(
-            "page_number",
-            [],
-        ),
-    )
-
-    if pages is None:
-        return []
-
-    if isinstance(
-        pages,
-        int,
-    ):
-        return [pages]
-
-    if isinstance(
-        pages,
-        str,
-    ):
-        try:
-            return [int(pages)]
-        except ValueError:
-            return []
-
-    if isinstance(
-        pages,
-        list,
-    ):
-        normalized = []
-
-        for page in pages:
-            try:
-                normalized.append(
-                    int(page)
-                )
-            except (
-                TypeError,
-                ValueError,
-            ):
-                continue
-
-        return normalized
-
-    return []
-
-
-def get_sections(
-    payload: dict,
-) -> list[str]:
-
-    sections = payload.get(
-        "section_headings",
-        payload.get(
-            "section",
-            [],
-        ),
-    )
-
-    if sections is None:
-        return []
-
-    if isinstance(
-        sections,
-        str,
-    ):
-        return [sections]
-
-    if isinstance(
-        sections,
-        list,
-    ):
-        return [
-            str(section)
-            for section in sections
-            if section
-        ]
-
-    return [str(sections)]
-
-
-# ============================================================
-# RETRIEVAL RELEVANCE
-# ============================================================
-
-def keyword_coverage(
-    retrieved_text: str,
-    expected_keywords: list[str],
-) -> float:
-
-    if not expected_keywords:
-        return 0.0
-
-    text = normalize_text(
-        retrieved_text
-    )
-
-    matched = sum(
-        normalize_text(keyword)
-        in text
-        for keyword in expected_keywords
-    )
-
-    return matched / len(
-        expected_keywords
-    )
-
-
-def document_match(
-    payload: dict,
-    case: dict,
+def is_answerable_case(
+    case: dict[str, Any],
 ) -> bool:
-
-    target_doc = case.get(
-        "target_doc"
-    )
-
-    if not target_doc:
-        return False
-
-    candidates = [
-        payload.get("doc_name"),
-        payload.get(
-            "original_filename"
-        ),
-        payload.get("source"),
-        payload.get("document_id"),
-    ]
-
-    target_norm = normalize_text(
-        target_doc
-    )
-
-    return any(
-        target_norm
-        in normalize_text(candidate)
-        for candidate in candidates
-        if candidate
-    )
-
-
-def page_match(
-    payload: dict,
-    case: dict,
-) -> bool:
-
-    target_page = case.get(
-        "target_page"
-    )
-
-    if target_page is None:
-        return False
-
     return (
-        int(target_page)
-        in get_pages(payload)
+        case.get("expected_status")
+        == "answered"
     )
 
 
 def is_relevant(
-    point: dict,
-    case: dict,
+    point: dict[str, Any],
+    case: dict[str, Any],
 ) -> bool:
 
-    # Refusal cases do NOT have a retrieval
-    # relevance target.
-    if (
-        case.get("expected_status")
-        != "answered"
-    ):
+    if not is_answerable_case(case):
         return False
 
     payload = point.get(
@@ -265,9 +64,15 @@ def is_relevant(
         {},
     )
 
-    text = payload.get(
-        "text",
-        "",
+    if not isinstance(payload, dict):
+        return False
+
+    target_doc = normalize_text(
+        case.get("target_doc")
+    )
+
+    target_page = case.get(
+        "target_page"
     )
 
     expected_keywords = case.get(
@@ -275,14 +80,25 @@ def is_relevant(
         [],
     )
 
-    doc_ok = document_match(
-        payload,
-        case,
+    document = normalize_text(
+        get_document_name(payload)
     )
 
-    page_ok = page_match(
-        payload,
-        case,
+    document_match = (
+        bool(target_doc)
+        and target_doc in document
+    )
+
+    pages = get_pages(payload)
+
+    page_match = (
+        target_page is not None
+        and int(target_page) in pages
+    )
+
+    text = payload.get(
+        "text",
+        "",
     )
 
     coverage = keyword_coverage(
@@ -290,25 +106,21 @@ def is_relevant(
         expected_keywords,
     )
 
-    # Strong relevance:
+    # Strong ground truth:
     #
-    # 1. target document + target page
+    # target document + target page
+    #
     # OR
-    # 2. target document + >= 50% keywords
     #
-    # We intentionally do NOT use:
-    #
-    #     score >= 0.60
-    #
-    # as ground truth.
-    #
-    # Similarity is a retrieval signal, not relevance
-    # ground truth.
+    # target document + sufficient keyword evidence.
 
-    if doc_ok and page_ok:
+    if document_match and page_match:
         return True
 
-    if doc_ok and coverage >= 0.50:
+    if (
+        document_match
+        and coverage >= 0.50
+    ):
         return True
 
     return False
@@ -321,7 +133,9 @@ def is_relevant(
 def search(
     query: str,
     limit: int,
-) -> list[dict]:
+) -> tuple[list[dict[str, Any]], float]:
+
+    start = time.perf_counter()
 
     response = requests.post(
         API_URL,
@@ -332,39 +146,44 @@ def search(
         timeout=60,
     )
 
+    latency = (
+        time.perf_counter()
+        - start
+    )
+
     response.raise_for_status()
 
-    data = response.json()
+    body = response.json()
 
-    # Current ELARA response shape
-    search_data = (
-        data
-        .get("data", {})
-        .get(
-            "search_results",
-            {},
-        )
+    data = body.get(
+        "data",
+        {},
+    )
+
+    search_results = data.get(
+        "search_results",
+        {},
     )
 
     if isinstance(
-        search_data,
+        search_results,
         dict,
     ):
-        points = search_data.get(
+        points = search_results.get(
             "points",
             [],
         )
 
     elif isinstance(
-        search_data,
+        search_results,
         list,
     ):
-        points = search_data
+        points = search_results
 
     else:
         points = []
 
-    return points
+    return points, latency
 
 
 # ============================================================
@@ -372,448 +191,330 @@ def search(
 # ============================================================
 
 def calculate_metrics(
-    points: list[dict],
-    case: dict,
+    points: list[dict[str, Any]],
+    case: dict[str, Any],
     k: int,
-):
+) -> dict[str, float]:
 
     top_k = points[:k]
 
-    relevant_ranks = []
-
-    for rank, point in enumerate(
-        top_k,
-        start=1,
-    ):
-
+    relevant_ranks = [
+        rank
+        for rank, point in enumerate(
+            top_k,
+            start=1,
+        )
         if is_relevant(
             point,
             case,
-        ):
-            relevant_ranks.append(
-                rank
-            )
+        )
+    ]
+
+    retrieved_count = len(top_k)
 
     relevant_count = len(
         relevant_ranks
     )
 
     precision = (
-        relevant_count / k
-        if k
+        relevant_count
+        / retrieved_count
+        if retrieved_count
         else 0.0
     )
 
-    # For this dataset, each safe query has one
-    # intended evidence target.
-    #
-    # Therefore recall is:
-    #
-    # 1 if at least one relevant chunk found
-    # 0 otherwise.
-    #
+    # This dataset currently defines one target
+    # evidence location per answerable case.
     recall = (
         1.0
-        if relevant_ranks
+        if relevant_count > 0
         else 0.0
     )
 
-    mrr = (
+    hit = int(
+        relevant_count > 0
+    )
+
+    reciprocal_rank = (
         1.0 / relevant_ranks[0]
         if relevant_ranks
         else 0.0
     )
 
-    hit = int(
-        bool(relevant_ranks)
-    )
-
     return {
         "precision_at_k": precision,
-        "recall": recall,
+        "recall_at_k": recall,
         "hit_at_k": hit,
-        "reciprocal_rank": mrr,
+        "mrr_at_k": reciprocal_rank,
     }
 
 
 # ============================================================
-# MAIN EVALUATION
+# CASE EVALUATION
 # ============================================================
 
-def run_evaluation_pipeline():
+def evaluate_case(
+    case: dict[str, Any],
+    k: int,
+) -> dict[str, Any]:
+
+    started = time.perf_counter()
+
+    try:
+        points, api_latency = search(
+            case["query"],
+            k,
+        )
+
+        error = ""
+
+    except Exception as exc:
+        points = []
+        api_latency = 0.0
+        error = str(exc)
+
+    metrics = calculate_metrics(
+        points,
+        case,
+        k,
+    )
+
+    retrieved = []
+
+    for rank, point in enumerate(
+        points[:k],
+        start=1,
+    ):
+
+        payload = point.get(
+            "payload",
+            {},
+        )
+
+        text = payload.get(
+            "text",
+            "",
+        )
+
+        retrieved.append({
+            "rank": rank,
+            "chunk_id": str(
+                point.get(
+                    "id",
+                    "",
+                )
+            ),
+            "score": float(
+                point.get(
+                    "score",
+                    0.0,
+                )
+            ),
+            "document": get_document_name(
+                payload
+            ),
+            "pages": get_pages(
+                payload
+            ),
+            "sections": get_sections(
+                payload
+            ),
+            "relevant": is_relevant(
+                point,
+                case,
+            ),
+            "keyword_coverage": keyword_coverage(
+                text,
+                case.get(
+                    "expected_keywords",
+                    [],
+                ),
+            ),
+            "text_preview": normalize_text(
+                text
+            )[:300],
+        })
+
+    first_relevant_rank = next(
+        (
+            item["rank"]
+            for item in retrieved
+            if item["relevant"]
+        ),
+        None,
+    )
+
+    return {
+        "id": case["id"],
+        "category": case.get(
+            "category"
+        ),
+        "query": case["query"],
+        "expected_status": case.get(
+            "expected_status"
+        ),
+        "target_doc": case.get(
+            "target_doc"
+        ),
+        "target_page": case.get(
+            "target_page"
+        ),
+        "top_k": k,
+        "returned_count": len(points[:k]),
+        "precision_at_k": metrics[
+            "precision_at_k"
+        ],
+        "recall_at_k": metrics[
+            "recall_at_k"
+        ],
+        "hit_at_k": metrics[
+            "hit_at_k"
+        ],
+        "mrr_at_k": metrics[
+            "mrr_at_k"
+        ],
+        "first_relevant_rank": (
+            first_relevant_rank
+        ),
+        "api_latency_seconds": api_latency,
+        "evaluation_latency_seconds": (
+            time.perf_counter()
+            - started
+        ),
+        "error": error,
+        "retrieved_chunks_json": json.dumps(
+            retrieved,
+            ensure_ascii=False,
+        ),
+    }
+
+
+# ============================================================
+# EVALUATION
+# ============================================================
+
+def run_evaluation() -> None:
 
     RESULTS_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    cases = load_dataset(
+    cases = load_evaluation_cases(
         DATASET_PATH
     )
 
-    if not cases:
+    answerable_cases = [
+        case
+        for case in cases
+        if is_answerable_case(case)
+    ]
+
+    if not answerable_cases:
         raise RuntimeError(
-            "Evaluation dataset is empty."
+            "No answerable evaluation cases found."
         )
 
-    run_id = (
-        "RUN_"
-        + datetime.now().strftime(
-            "%Y%m%d_%H%M%S"
-        )
+    print(
+        f"Dataset: {DATASET_PATH}"
+    )
+
+    print(
+        f"Answerable cases: "
+        f"{len(answerable_cases)}"
     )
 
     rows = []
 
-    for k in TOP_K_CONFIGS:
+    for k in TOP_K_VALUES:
 
         print(
             f"\n{'=' * 70}"
         )
 
         print(
-            f"Running retrieval evaluation "
-            f"with Top-K={k}"
+            f"Evaluating Retrieval @ K={k}"
         )
 
         print(
             f"{'=' * 70}"
         )
 
-        for case in cases:
+        for index, case in enumerate(
+            answerable_cases,
+            start=1,
+        ):
 
             print(
-                f"[{case['id']}] "
-                f"{case['query']}"
+                f"[{index}/{len(answerable_cases)}] "
+                f"{case['id']}"
             )
 
-            try:
-
-                points = search(
-                    case["query"],
-                    k,
-                )
-
-            except Exception as exc:
-
-                print(
-                    f"ERROR: {exc}"
-                )
-
-                points = []
-
-            metrics = calculate_metrics(
-                points,
+            row = evaluate_case(
                 case,
                 k,
             )
 
-            retrieved_records = []
+            rows.append(row)
 
-            for rank, point in enumerate(
-                points[:k],
-                start=1,
-            ):
-
-                payload = point.get(
-                    "payload",
-                    {},
-                )
-
-                pages = get_pages(
-                    payload
-                )
-
-                sections = get_sections(
-                    payload
-                )
-
-                text = payload.get(
-                    "text",
-                    "",
-                )
-
-                retrieved_records.append({
-
-                    "rank": rank,
-
-                    "chunk_id": point.get(
-                        "id",
-                        "N/A",
-                    ),
-
-                    "score": round(
-                        float(
-                            point.get(
-                                "score",
-                                0.0,
-                            )
-                        ),
-                        4,
-                    ),
-
-                    "document_id": payload.get(
-                        "document_id",
-                        "N/A",
-                    ),
-
-                    "document": (
-                        payload.get(
-                            "doc_name"
-                        )
-                        or payload.get(
-                            "original_filename"
-                        )
-                        or payload.get(
-                            "source"
-                        )
-                        or "N/A"
-                    ),
-
-                    "pages": pages,
-
-                    "sections": sections,
-
-                    "is_relevant": (
-                        is_relevant(
-                            point,
-                            case,
-                        )
-                    ),
-
-                    "keyword_coverage": round(
-                        keyword_coverage(
-                            text,
-                            case.get(
-                                "expected_keywords",
-                                [],
-                            ),
-                        ),
-                        4,
-                    ),
-
-                    "text_preview": (
-                        text[:300]
-                        .replace(
-                            "\n",
-                            " ",
-                        )
-                    ),
-                })
-
-            top1 = (
-                retrieved_records[0]
-                if retrieved_records
-                else {}
-            )
-
-            rows.append({
-
-                "run_id": run_id,
-
-                "timestamp": (
-                    datetime.now()
-                    .isoformat()
-                ),
-
-                "top_k": k,
-
-                "query_id": case["id"],
-
-                "category": case[
-                    "category"
-                ],
-
-                "persona": case[
-                    "persona"
-                ],
-
-                "query": case[
-                    "query"
-                ],
-
-                "expected_status": case[
-                    "expected_status"
-                ],
-
-                "is_failure_case": case.get(
-                    "is_failure_case",
-                    False,
-                ),
-
-                "failure_mode": (
-                    case.get(
-                        "failure_mode"
-                    )
-                    or ""
-                ),
-
-                "expected_gate_trigger": (
-                    case.get(
-                        "expected_gate_trigger"
-                    )
-                    or ""
-                ),
-
-                "precision_at_k": round(
-                    metrics[
-                        "precision_at_k"
-                    ],
-                    4,
-                ),
-
-                "recall": round(
-                    metrics[
-                        "recall"
-                    ],
-                    4,
-                ),
-
-                "hit_at_k": metrics[
-                    "hit_at_k"
-                ],
-
-                "reciprocal_rank": round(
-                    metrics[
-                        "reciprocal_rank"
-                    ],
-                    4,
-                ),
-
-                "top1_score": (
-                    top1.get(
-                        "score"
-                    )
-                ),
-
-                "top1_chunk_id": (
-                    top1.get(
-                        "chunk_id",
-                        "N/A",
-                    )
-                ),
-
-                "top1_document": (
-                    top1.get(
-                        "document",
-                        "N/A",
-                    )
-                ),
-
-                "top1_pages": json.dumps(
-                    top1.get(
-                        "pages",
-                        [],
-                    )
-                ),
-
-                "top1_sections": json.dumps(
-                    top1.get(
-                        "sections",
-                        [],
-                    ),
-                    ensure_ascii=False,
-                ),
-
-                "retrieved_chunks_json": (
-                    json.dumps(
-                        retrieved_records,
-                        ensure_ascii=False,
-                    )
-                ),
-            })
-
-    df = pd.DataFrame(
+    dataframe = pd.DataFrame(
         rows
     )
 
-    df.to_csv(
-        METRICS_CSV,
+    metrics_path = (
+        RESULTS_DIR
+        / "retrieval_cases.csv"
+    )
+
+    dataframe.to_csv(
+        metrics_path,
         index=False,
     )
 
-    aggregate_and_save_summary(
-        df
-    )
-
-    print(
-        "\nRetrieval evaluation complete."
-    )
-
-    print(
-        f"Metrics: {METRICS_CSV}"
-    )
-
-    print(
-        f"Summary: {SUMMARY_CSV}"
-    )
-
-
-# ============================================================
-# SUMMARY
-# ============================================================
-
-def aggregate_and_save_summary(
-    df: pd.DataFrame,
-):
-
-    # Only answerable questions have retrieval
-    # relevance ground truth.
-    safe_df = df[
-        df["expected_status"]
-        == "answered"
-    ].copy()
-
-    if safe_df.empty:
-        print(
-            "No answerable cases found."
-        )
-        return
-
     summary = (
-        safe_df
+        dataframe
         .groupby("top_k")
         .agg(
-            mean_precision_at_k=(
+            precision_at_k=(
                 "precision_at_k",
                 "mean",
             ),
-
-            mean_recall=(
-                "recall",
+            recall_at_k=(
+                "recall_at_k",
                 "mean",
             ),
-
             hit_rate=(
                 "hit_at_k",
                 "mean",
             ),
-
-            mean_mrr=(
-                "reciprocal_rank",
+            mrr=(
+                "mrr_at_k",
                 "mean",
             ),
-
-            mean_top1_score=(
-                "top1_score",
+            mean_latency_seconds=(
+                "api_latency_seconds",
                 "mean",
             ),
-
-            total_queries=(
-                "query_id",
+            queries=(
+                "id",
                 "count",
             ),
         )
         .reset_index()
     )
 
+    summary_path = (
+        RESULTS_DIR
+        / "retrieval_summary.csv"
+    )
+
     summary.to_csv(
-        SUMMARY_CSV,
+        summary_path,
         index=False,
     )
 
     print(
-        "\nRetrieval summary:"
+        "\nRetrieval Evaluation Complete"
     )
 
     print(
@@ -822,6 +523,14 @@ def aggregate_and_save_summary(
         )
     )
 
+    print(
+        f"\nCases: {metrics_path}"
+    )
+
+    print(
+        f"Summary: {summary_path}"
+    )
+
 
 if __name__ == "__main__":
-    run_evaluation_pipeline()
+    run_evaluation()

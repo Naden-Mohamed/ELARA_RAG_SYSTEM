@@ -173,39 +173,67 @@ async def get_index_info(
         data={"document_id": document_id, "index_info": info}
     )
 
-
-@rag.post("/search")                    
-async def search_by_vector(                   
+@rag.post("/search")
+async def search_by_vector(
     request: Request,
-    search_request: SearchRequest
+    search_request: SearchRequest,
 ):
     vectordb = request.app.state.vectordb
-    embedding_service = request.app.state.embedding_service 
+    embedding_service = request.app.state.embedding_service
 
-    risk = classify_input_risk(search_request.text)
+    risk = classify_input_risk(
+        search_request.text
+    )
 
     if risk["risk_level"] == RiskLevel.UNSAFE:
-        answer = build_safe_fallback_message("en")
-        citations, latency = [], 0.0
-    else:   
-        query_embeddings = embedding_service.embed_text(search_request.text, document_type=DocumentTypeEnum.QUERY.value)
-        results = await vectordb.search_by_vector(
-            DataBaseEnums.DOCUMENTS_COLLECTION.value,
-            query_embeddings[0],
-            search_request.limit
+        return APIResponce(
+            status_code=status.HTTP_200_OK,
+            status="refused",
+            data={
+                "search_results": {
+                    "points": []
+                },
+                "risk_level": risk["risk_level"],
+                "reason": risk["reason"],
+            },
         )
 
-        if not results:
-            return APIResponce(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
-                error="No search results"
-            )
+    query_embeddings = (
+        embedding_service.embed_text(
+            search_request.text,
+            document_type=DocumentTypeEnum.QUERY.value,
+        )
+    )
+
+    if (
+        query_embeddings is None
+        or len(query_embeddings) == 0
+    ):
+        return APIResponce(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
+            error="Query embedding generation failed",
+        )
+
+    results = await vectordb.search_by_vector(
+        DataBaseEnums.DOCUMENTS_COLLECTION.value,
+        query_embeddings[0],
+        search_request.limit,
+    )
+
+    if results is None:
+        return APIResponce(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
+            error="Vector database search failed",
+        )
 
     return APIResponce(
         status_code=status.HTTP_200_OK,
         status=ResponseStatusEnums.VECTORDB_SEARCH_SUCCESS.value,
-        data={"search_results": results}
+        data={
+            "search_results": results
+        },
     )
 
 @rag.post("/test-prompt", response_model=APIResponce)
@@ -296,10 +324,29 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
         )
         print("citations", citations)
 
-        validation = validate_grounded_response(answer, citations, chunks_to_use)
-        # if not validation["valid"]:
-        #     answer = build_safe_fallback_message(payload.language)
-        #     citations = []
+        validation = validate_grounded_response(
+            answer,
+            citations,
+            chunks_to_use,
+        )
+
+        if not validation["valid"]:
+            return APIResponce(
+                status_code=status.HTTP_200_OK,
+                status="refused",
+                data={
+                    "query": payload.query,
+                    "persona": payload.persona.value,
+                    "language": payload.language.value,
+                    "answer": build_safe_fallback_message(
+                        payload.language
+                    ),
+                    "latency_seconds": latency,
+                    "citations": [],
+                    "is_refusal": True,
+                    "validation_reason": validation["reason"],
+                },
+            )
 
         return APIResponce(
             status_code=status.HTTP_200_OK,

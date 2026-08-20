@@ -126,7 +126,6 @@ class LLMService:
 
         messages: List[ChatCompletionMessageParam] = [
             cast(ChatCompletionMessageParam, {"role": "system", "content": system_prompt}),
-            cast(ChatCompletionMessageParam, {"role": "user", "content": user_prompt})
         ]
         
         for msg in history:
