@@ -189,3 +189,86 @@ def keyword_coverage(
             matched += 1
 
     return matched / len(expected_keywords)
+
+
+PAGE_TOLERANCE = 2
+
+
+def document_token_overlap(
+    payload: dict[str, Any],
+    case: dict[str, Any],
+) -> bool:
+    """Token-overlap signal between target_doc and the retrieved chunk's
+    stored document name. Reported for diagnostics but NOT used to gate
+    relevance -- with today's corpus (renamed on upload, original title
+    never persisted) it is nearly always False even for a correct hit,
+    so gating on it reproduces the all-zero-metrics bug. Once uploads
+    preserve the real filename, this can be promoted into a real gate."""
+    target_doc = case.get("target_doc")
+    if not target_doc:
+        return True
+
+    doc_name = get_document_name(payload)
+    if not doc_name:
+        return False
+
+    target_tokens = {t for t in normalize_text(target_doc).split() if len(t) > 3}
+    doc_tokens = {t for t in normalize_text(doc_name).split() if len(t) > 3}
+    if not target_tokens or not doc_tokens:
+        return False
+
+    return bool(target_tokens & doc_tokens)
+
+
+def page_is_close(
+    payload: dict[str, Any],
+    case: dict[str, Any],
+    tolerance: int = PAGE_TOLERANCE,
+) -> bool:
+    target_page = case.get("target_page")
+    if target_page is None:
+        return False
+
+    pages = get_pages(payload)
+    if not pages:
+        return False
+
+    return any(abs(p - int(target_page)) <= tolerance for p in pages)
+
+
+KEYWORD_RELEVANCE_THRESHOLD = 0.5
+
+
+def label_relevance(
+    point: dict[str, Any],
+    case: dict[str, Any],
+) -> dict[str, Any]:
+    """Single source of truth for 'is this retrieved chunk relevant to this
+    case', used by retrieval eval, the reranker comparison, and the chunk-
+    config comparison so all three agree on the same ground truth.
+
+    Relevant if EITHER:
+      - the target page is within PAGE_TOLERANCE pages of a page the chunk
+        actually covers, OR
+      - keyword coverage on the chunk text is >= KEYWORD_RELEVANCE_THRESHOLD
+
+    Document identity is reported (`document_token_overlap`) but does not
+    gate relevance -- see that function's docstring for why.
+    """
+    if case.get("expected_status") != "answered":
+        return {"relevant": False, "reason": "case is not answerable (refusal case)"}
+
+    payload = point.get("payload", {})
+    if not isinstance(payload, dict):
+        return {"relevant": False, "reason": "no payload on retrieved point"}
+
+    text = payload.get("text", "")
+    coverage = keyword_coverage(text, case.get("expected_keywords", []))
+    page_ok = page_is_close(payload, case)
+    doc_overlap = document_token_overlap(payload, case)
+
+    if page_ok:
+        return {"relevant": True, "reason": f"target_page within tolerance ({PAGE_TOLERANCE})", "keyword_coverage": coverage, "document_token_overlap": doc_overlap}
+    if coverage >= KEYWORD_RELEVANCE_THRESHOLD:
+        return {"relevant": True, "reason": f"keyword_coverage={coverage:.2f} >= {KEYWORD_RELEVANCE_THRESHOLD}", "keyword_coverage": coverage, "document_token_overlap": doc_overlap}
+    return {"relevant": False, "reason": f"keyword_coverage={coverage:.2f}, page not close, doc_overlap={doc_overlap}", "keyword_coverage": coverage, "document_token_overlap": doc_overlap}

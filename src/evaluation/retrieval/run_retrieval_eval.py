@@ -15,6 +15,7 @@ from evaluation.common import (
     get_pages,
     get_sections,
     keyword_coverage,
+    label_relevance,
     load_evaluation_cases,
     normalize_text,
 )
@@ -55,75 +56,11 @@ def is_relevant(
     point: dict[str, Any],
     case: dict[str, Any],
 ) -> bool:
-
-    if not is_answerable_case(case):
-        return False
-
-    payload = point.get(
-        "payload",
-        {},
-    )
-
-    if not isinstance(payload, dict):
-        return False
-
-    target_doc = normalize_text(
-        case.get("target_doc")
-    )
-
-    target_page = case.get(
-        "target_page"
-    )
-
-    expected_keywords = case.get(
-        "expected_keywords",
-        [],
-    )
-
-    document = normalize_text(
-        get_document_name(payload)
-    )
-
-    document_match = (
-        bool(target_doc)
-        and target_doc in document
-    )
-
-    pages = get_pages(payload)
-
-    page_match = (
-        target_page is not None
-        and int(target_page) in pages
-    )
-
-    text = payload.get(
-        "text",
-        "",
-    )
-
-    coverage = keyword_coverage(
-        text,
-        expected_keywords,
-    )
-
-    # Strong ground truth:
-    #
-    # target document + target page
-    #
-    # OR
-    #
-    # target document + sufficient keyword evidence.
-
-    if document_match and page_match:
-        return True
-
-    if (
-        document_match
-        and coverage >= 0.50
-    ):
-        return True
-
-    return False
+    """Thin wrapper -- ground truth now lives in evaluation.common.label_relevance
+    so the retrieval eval, reranker comparison, and chunk-config comparison
+    all agree on what counts as a relevant chunk. See that function's
+    docstring for why document identity no longer gates relevance."""
+    return label_relevance(point, case)["relevant"]
 
 
 # ============================================================
