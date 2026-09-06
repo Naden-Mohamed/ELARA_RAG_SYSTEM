@@ -17,23 +17,24 @@ class Settings(BaseSettings):
     # Qdrant Vector DB
     QDRANT_API_KEY: str | None = None
     QDRANT_URL: str | None = None
-    DENSE_VECTOR_NAME: str = "dense_vector"
-    SPARSE_VECTOR_NAME: str = "sparse_vector"
+    DENSE_VECTOR_NAME: str = "dense"
+    SPARSE_VECTOR_NAME: str = "sparse"
 
     # File & Chunking
     FILE_ALLOWED_TYPES: List[str] = ["text/plain", "application/pdf", ".docx"]
     FILE_MAX_SIZE_MB: int = 10
     FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512 KB
     USE_SIMPLE_CHUNKER: bool = False
-    
-        
+
     # LLM & Embedding Models
-    GROQ_API_KEY: str | None  = None
+    GROQ_API_KEY: str | None = None
     GENERATION_MODEL_ID: str = "openai/gpt-oss-120b"
-    BGE_EMBEDDING_MODEL_ID: str ="BAAI/bge-m3"
-    BGE_EMBEDDING_MODEL_SIZE: int =1024
-    MiniLM_EMBEDDING_MODEL_ID: str ="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" 
-    MiniLM_EMBEDDING_MODEL_SIZE: int =384
+    BGE_EMBEDDING_MODEL_ID: str = "BAAI/bge-m3"
+    BGE_EMBEDDING_MODEL_SIZE: int = 1024
+    MiniLM_EMBEDDING_MODEL_ID: str = (
+        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    )
+    MiniLM_EMBEDDING_MODEL_SIZE: int = 384
     GENERATION_BACKEND: str = "GROQ"
     EMBEDDING_BACKEND: str = "BGE"
 
@@ -48,10 +49,9 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "super_secret_elara_key_change_in_prod"
 
     model_config = SettingsConfigDict(
-        env_file=str(ENV_PATH),
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=str(ENV_PATH), env_file_encoding="utf-8", extra="ignore"
     )
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

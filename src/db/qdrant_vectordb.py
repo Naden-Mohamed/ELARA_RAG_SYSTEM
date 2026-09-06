@@ -1,6 +1,6 @@
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import VectorParams, PointStruct, Distance, models
-from typing import List, Optional
+from qdrant_client.http.exceptions import UnexpectedResponse
 import logging
 from enum import Enum
 from core.config import get_settings
@@ -9,40 +9,48 @@ import uuid
 
 class DistanceMetric(Enum):
     COSINE = "Cosine"
-    EUCLIDEAN = "Euclid" 
+    EUCLIDEAN = "Euclid"
     DOT_PRODUCT = "Dot"
 
 
 class Qdrant:
     def __init__(self, distance_metric: str = "Cosine"):
         self.settings = get_settings()
-        raw_url = self.settings.QDRANT_URL.strip() if self.settings.QDRANT_URL else "http://127.0.0.1:6333"
-        
+        raw_url = (
+            self.settings.QDRANT_URL.strip()
+            if self.settings.QDRANT_URL
+            else "http://127.0.0.1:6333"
+        )
+
         # Ensure scheme exists to prevent client hang
         if not raw_url.startswith("http://") and not raw_url.startswith("https://"):
             raw_url = f"http://{raw_url}"
-            
+
         self.url = raw_url
-        self.api_key = self.settings.QDRANT_API_KEY.strip() if self.settings.QDRANT_API_KEY else None
+        self.api_key = (
+            self.settings.QDRANT_API_KEY.strip()
+            if self.settings.QDRANT_API_KEY
+            else None
+        )
         self.dense_vector_name = self.settings.DENSE_VECTOR_NAME
         self.sparse_vector_name = self.settings.SPARSE_VECTOR_NAME
         self.client = None
 
         if distance_metric == DistanceMetric.COSINE.value:
-            self.distance_metric = Distance.COSINE
+            self.distance_metric = models.Distance.COSINE
         elif distance_metric == DistanceMetric.EUCLIDEAN.value:
-            self.distance_metric = Distance.EUCLID
+            self.distance_metric = models.Distance.EUCLID
         elif distance_metric == DistanceMetric.DOT_PRODUCT.value:
-            self.distance_metric = Distance.DOT
+            self.distance_metric = models.Distance.DOT
         else:
-            self.distance_metric = Distance.COSINE 
+            self.distance_metric = models.Distance.COSINE
 
         self.logger = logging.getLogger(__name__)
 
     async def connect(self):
         try:
             is_https = self.url.startswith("https://")
-            
+
             self.client = AsyncQdrantClient(
                 url=self.url,
                 api_key=self.api_key,
@@ -53,7 +61,7 @@ class Qdrant:
 
             await self.client.get_collections()
 
-        except Exception as e:
+        except Exception:
             self.logger.exception("Cannot connect to Qdrant")
             self.client = None
             raise
@@ -63,7 +71,9 @@ class Qdrant:
             self.client = None
             self.logger.info("Qdrant client is disconnected")
         else:
-            self.logger.warning("No active connection to disconnect from Qdrant database.")
+            self.logger.warning(
+                "No active connection to disconnect from Qdrant database."
+            )
 
     async def is_collection_exists(self, collection_name: str) -> bool:
         if not self.client:
@@ -72,61 +82,79 @@ class Qdrant:
         return await self.client.collection_exists(collection_name=collection_name)
 
     async def get_collection_info(self, collection_name: str):
-        if self.client and await self.is_collection_exists(collection_name=collection_name):
+        if self.client and await self.is_collection_exists(
+            collection_name=collection_name
+        ):
             return await self.client.get_collection(collection_name=collection_name)
         else:
-            self.logger.warning("Not connected to client or this collection doesn't exist.")
+            self.logger.warning(
+                "Not connected to client or this collection doesn't exist."
+            )
 
     async def get_collections(self):
         if self.client:
             return await self.client.get_collections()
-        
+
     async def delete_collection(self, collection_name: str) -> bool:
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
         return await self.client.delete_collection(collection_name=collection_name)
 
-    async def create_collection(self, collection_name: str, embedding_size: int, do_reset: int = 0) -> bool:
+    async def create_collection(
+        self, collection_name: str, embedding_size: int, do_reset: int = 0
+    ) -> bool:
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
-        
+
         if await self.is_collection_exists(collection_name=collection_name):
             if do_reset:
                 await self.delete_collection(collection_name=collection_name)
-                self.logger.info(f"do_reset is 1, collection '{collection_name}' deleted")
+                self.logger.info(
+                    f"do_reset is 1, collection '{collection_name}' deleted"
+                )
             else:
-                self.logger.info(f"Collection '{collection_name}' already exists, skipping creation.")
-                return True 
-            
+                self.logger.info(
+                    f"Collection '{collection_name}' already exists, skipping creation."
+                )
+                return True
+
         try:
             await self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config={
-                    self.dense_vector_name: VectorParams(
-                        size=embedding_size,
-                        distance=self.distance_metric
+                    self.dense_vector_name: models.VectorParams(
+                        size=embedding_size, distance=self.distance_metric
                     )
                 },
-
                 sparse_vectors_config={
-                    "sparse": models.SparseVectorParams(modifier=models.Modifier.IDF)
-                }
-
+                    self.sparse_vector_name: models.SparseVectorParams(
+                        modifier=models.Modifier.IDF
+                    )
+                },
             )
             print(f"Collection '{collection_name}' created with size {embedding_size}.")
-            self.logger.info(f"Collection '{collection_name}' created with size {embedding_size}.")
+            self.logger.info(
+                f"Collection '{collection_name}' created with size {embedding_size}."
+            )
             return True
-        except Exception as e:
+        except (ValueError, TypeError, RuntimeError) as e:
             self.logger.error(f"Failed to create collection '{collection_name}': {e}")
             return False
 
-    async def insert_one(self, collection_name: str, text: str, vector: list, record_id: Optional[str] = None, metadata: Optional[dict] = None) -> bool:
+    async def insert_one(
+        self,
+        collection_name: str,
+        text: str,
+        vector: list,
+        record_id: str | None = None,
+        metadata: dict | None = None,
+    ) -> bool:
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
-        
+
         if not await self.is_collection_exists(collection_name=collection_name):
             self.logger.error(f"Collection '{collection_name}' doesn't exist")
             return False
@@ -137,29 +165,42 @@ class Qdrant:
         try:
             await self.client.upsert(
                 collection_name=collection_name,
-                points=[PointStruct(
-                    id=record_id,
-                    vector={self.dense_vector_name: vector},
-                    payload={
-                        "text": text,
-                        **(metadata or {})
-                    }
-                )]
+                points=[
+                    PointStruct(
+                        id=record_id,
+                        vector={self.dense_vector_name: vector},
+                        payload={"text": text, **(metadata or {})},
+                    )
+                ],
             )
-            self.logger.info(f"Inserted one point into collection '{collection_name}' successfully.")
+            self.logger.info(
+                f"Inserted one point into collection '{collection_name}' successfully."
+            )
             return True
         except Exception as e:
-            self.logger.error(f"Failed to insert point into collection '{collection_name}': {e}")
+            self.logger.error(
+                f"Failed to insert point into collection '{collection_name}': {e}"
+            )
             return False
 
-    async def insert_many(self, collection_name: str, texts: list[str], vectors: list, record_ids: Optional[list[str]] = None, metadatas: Optional[list] = None, batch_size: int = 50) -> bool:
+    async def insert_many(
+        self,
+        collection_name: str,
+        texts: list[str],
+        vectors: list,
+        record_ids: list[str] | None = None,
+        metadatas: list | None = None,
+        batch_size: int = 50,
+    ) -> bool:
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
-        
+
         if not await self.is_collection_exists(collection_name=collection_name):
             self.logger.error(f"Collection '{collection_name}' doesn't exist")
-            created = await self.create_collection(collection_name, self.settings.BGE_EMBEDDING_MODEL_SIZE, do_reset=0)
+            created = await self.create_collection(
+                collection_name, self.settings.BGE_EMBEDDING_MODEL_SIZE, do_reset=0
+            )
             print(f"Collection '{collection_name}' created")
             if not created:
                 return False
@@ -178,48 +219,117 @@ class Qdrant:
             batch_record_ids = record_ids[i:batch_end]
 
             batch_points = [
-                PointStruct(
+                models.PointStruct(
                     id=batch_record_ids[x],
-                    vector={self.dense_vector_name: batch_vectors[x]},
-                    payload={
-                        "text": batch_texts[x],
-                        **(batch_metadatas[x] or {})
-                    }
-                )     
+                    vector={
+                        self.dense_vector_name: batch_vectors[x],
+                        self.sparse_vector_name: models.Document(
+                            text= batch_texts[x],
+                            model = "Qdrant/bm25"
+                        ),
+                    },
+                    payload={"text": batch_texts[x], **(batch_metadatas[x] or {})},
+                )
                 for x in range(len(batch_texts))
             ]
 
             try:
                 await self.client.upsert(
-                    collection_name=collection_name,
-                    points=batch_points
+                    collection_name=collection_name, points=batch_points
                 )
-                self.logger.info(f"Inserted batch of {len(batch_texts)} points into '{collection_name}'.")
+                self.logger.info(
+                    f"Inserted batch of {len(batch_texts)} points into '{collection_name}'."
+                )
             except Exception as e:
-                self.logger.error(f"Failed to insert batch into '{collection_name}': {e}")
+                self.logger.error(
+                    f"Failed to insert batch into '{collection_name}': {e}"
+                )
                 return False
 
         return True
 
-    async def search_by_vector(self, collection_name: str, vector: list, top_k: int = 5):
+    async def search_by_vector(
+        self,
+        collection_name: str,
+        dense_vector: list,
+        sparse_vector: list,
+        top_k: int = 5,
+    ):
         if not self.client:
             self.logger.error("Qdrant client is not connected. Call connect() first.")
             return False
-        
+
         if not await self.is_collection_exists(collection_name=collection_name):
             self.logger.error(f"Collection '{collection_name}' doesn't exist")
             return False
 
         try:
-            print("collection",collection_name )
+            print("collection", collection_name)
             search_result = await self.client.query_points(
                 collection_name=collection_name,
-                query=vector,
-                using=self.dense_vector_name,
-                limit=top_k
+                prefetch=[
+                    models.Prefetch(
+                        query=dense_vector,
+                        using="dense",
+                        limit=10,
+                    ),
+                    models.Prefetch(
+                        query=sparse_vector,
+                        using="sparse",
+                        limit=10,
+                    ),
+                ],
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
+                limit=5,
+            )
+
+            self.logger.info(f"Search in '{collection_name}' completed successfully.")
+            return search_result.points
+
+        except Exception as e:
+            self.logger.error(f"Failed to search in '{collection_name}': {e}")
+            return None
+
+    async def hybrid_search(
+        self,
+        collection_name: str,
+        query: str,
+        dense_vector: list[float],
+        top_k: int = 5,
+        prefetch_limit: int = 10,
+    ):
+        if not self.client:
+            raise RuntimeError("Qdrant client is not connected.")
+
+        if not await self.is_collection_exists(collection_name=collection_name):
+            raise RuntimeError(f"Collection '{collection_name}' doesn't exist")
+
+        try:
+            print("collection", collection_name)
+            results = await self.client.query_points(
+                collection_name=collection_name,
+                prefetch=[
+                    models.Prefetch(
+                        query=dense_vector,
+                        using=self.dense_vector_name,
+                        limit=prefetch_limit,
+                    ),
+                    models.Prefetch(
+                        query=models.Document(
+                        text=query,
+                        model="Qdrant/bm25",
+                    ),
+                        using=self.sparse_vector_name,
+                        limit=prefetch_limit,
+                    ),
+                ],
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
+                limit=top_k,
+                with_payload=True,
             )
             self.logger.info(f"Search in '{collection_name}' completed successfully.")
-            return search_result
-        except Exception as e:
+            return results.points
+        
+        except UnexpectedResponse as e:
             self.logger.error(f"Failed to search in '{collection_name}': {e}")
             return None

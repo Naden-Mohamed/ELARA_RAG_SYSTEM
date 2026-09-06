@@ -16,12 +16,16 @@ from db.chunk_model import ChunkModel
 
 from routers.schemas.data_requests import SearchRequest, PushRequest
 from routers.schemas.rag_requests import (
-    QueryRequest, 
-    DirectPromptTestRequest, 
-    MockChunkInput
+    QueryRequest,
+    DirectPromptTestRequest,
+    MockChunkInput,
 )
 from core.risk_classifier import classify_input_risk, RiskLevel
-from core.safety_gate import pre_generation_gate, validate_grounded_response, build_safe_fallback_message
+from core.safety_gate import (
+    pre_generation_gate,
+    validate_grounded_response,
+    build_safe_fallback_message,
+)
 
 from services.llm_service import LLMService
 from core.config import get_settings
@@ -30,75 +34,71 @@ logger = logging.getLogger(__name__)
 rag = APIRouter(tags=["api/rag"], prefix="/rag")
 settings = get_settings()
 
-MOCK_BENCHMARK_CHUNKS = [
-    MockChunkInput(
-        chunk_id="chunk_01",
-        doc_name="WHO_MNH_Care_2025.pdf",
-        page_number=4,
-        section="Recommendation 1. Birth Preparedness",
-        text="A Birth Preparedness and Complication Readiness (BPCR) plan includes: desired birth location, identifying emergency transport, saving funds, and selecting a continuous birth companion.",
-        score = 0.90
-    ),
-    MockChunkInput(
-        chunk_id="chunk_02",
-        doc_name="WHO_MNH_Care_2025.pdf",
-        page_number=8,
-        section="Recommendation 8. Labour Companionship",
-        text="Continuous companionship during labour improves clinical outcomes and maternal satisfaction. Companions provide emotional and practical support.",
-        score = 0.89
-    )
-]
 
-@rag.post("/push")                    
-async def index_push(                   
-    request: Request,
-    push_request: PushRequest
-):
+@rag.post("/push")
+async def index_push(request: Request, push_request: PushRequest):
     try:
         db_client = request.app.state.db_client
         vectordb = request.app.state.vectordb
-        embedding_service = request.app.state.embedding_service 
-        
+        embedding_service = request.app.state.embedding_service
+
         chunk_model = await ChunkModel.get_instance(db_client=db_client)
         document_model = await DocumentModel.get_instance(db_client)
         doc = await document_model.get_document_by_id(push_request.document_id)
-        
-        file_chunks = await chunk_model.get_document_chunks(document_id=push_request.document_id)
-        
+
+        file_chunks = await chunk_model.get_document_chunks(
+            document_id=push_request.document_id
+        )
+
         if not file_chunks:
             return APIResponce(
                 status_code=status.HTTP_404_NOT_FOUND,
                 status=ResponseStatusEnums.NO_FILES_FOUNDED_TO_PROCESS.value,
-                error="No chunks found. Please run /data/ingest first."
+                error="No chunks found. Please run /data/ingest first.",
             )
 
         texts = [
             c.chunk_text if hasattr(c, "chunk_text") else c.chunk_text
             for c in file_chunks
         ]
-        
+
         batch_size = 32
         all_embeddings = []
+        all_sparse_embeddings = []
+
         for i in range(0, len(texts), batch_size):
-            batch_texts = texts[i:i + batch_size]
-            batch_emb = embedding_service.embed_text(batch_texts, document_type=DocumentTypeEnum.DOCUMENT.value)
+            batch_texts = texts[i : i + batch_size]
+
+            # Dense
+            batch_emb = embedding_service.embed_text(
+                batch_texts, document_type=DocumentTypeEnum.DOCUMENT.value
+            )
+
             if batch_emb is not None:
                 for vec in batch_emb:
-                    all_embeddings.append(vec.tolist() if hasattr(vec, "tolist") else list(vec))
+                    all_embeddings.append(
+                        vec.tolist() if hasattr(vec, "tolist") else list(vec)
+                    )
 
         if not all_embeddings or len(all_embeddings) != len(texts):
             return APIResponce(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
-                error="Embedding generation failed"
+                error="Embedding generation failed",
             )
 
         metadatas = [
             {
-                **(c.chunk_metadata if hasattr(c, "chunk_metadata") else c.chunk_metadata),
+                **(
+                    c.chunk_metadata
+                    if hasattr(c, "chunk_metadata")
+                    else c.chunk_metadata
+                ),
                 "document_id": str(push_request.document_id),
-                "doc_name": doc.doc_name if doc and hasattr(doc, "doc_name") else (doc.get("doc_name") if isinstance(doc, dict) else "document"),
-                "embedding_model": embedding_service.embedding_model_id
+                "doc_name": doc.doc_name
+                if doc and hasattr(doc, "doc_name")
+                else (doc.get("doc_name") if isinstance(doc, dict) else "document"),
+                "embedding_model": embedding_service.embedding_model_id,
             }
             for c in file_chunks
         ]
@@ -108,15 +108,14 @@ async def index_push(
             texts=texts,
             vectors=all_embeddings,
             metadatas=metadatas,
-            batch_size=32
+            batch_size=32,
         )
 
         if not inserted:
             return APIResponce(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
-                error="Failed to store vectors in Qdrant"
-
+                error="Failed to store vectors in Qdrant",
             )
         await document_model.update_status(
             doc_id=push_request.document_id,
@@ -127,7 +126,10 @@ async def index_push(
         return APIResponce(
             status_code=status.HTTP_200_OK,
             status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
-            data={"document_id": push_request.document_id, "chunk_count": len(file_chunks)}
+            data={
+                "document_id": push_request.document_id,
+                "chunk_count": len(file_chunks),
+            },
         )
 
     except Exception as e:
@@ -135,14 +137,12 @@ async def index_push(
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
-            error=str(e)
+            error=str(e),
         )
 
-@rag.post("/info")                    
-async def get_index_info(                   
-    request: Request,
-    document_id: str
-):
+
+@rag.post("/info")
+async def get_index_info(request: Request, document_id: str):
     db_client = request.app.state.db_client
     vectordb = request.app.state.vectordb
 
@@ -159,7 +159,7 @@ async def get_index_info(
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
-            error="Failed to get_collection_info"
+            error="Failed to get_collection_info",
         )
 
     await document_model.update_status(
@@ -170,8 +170,9 @@ async def get_index_info(
     return APIResponce(
         status_code=status.HTTP_200_OK,
         status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
-        data={"document_id": document_id, "index_info": info}
+        data={"document_id": document_id, "index_info": info},
     )
+
 
 @rag.post("/search")
 async def search_by_vector(
@@ -181,44 +182,37 @@ async def search_by_vector(
     vectordb = request.app.state.vectordb
     embedding_service = request.app.state.embedding_service
 
-    risk = classify_input_risk(
-        search_request.text
-    )
+    risk = classify_input_risk(search_request.text)
 
     if risk["risk_level"] == RiskLevel.UNSAFE:
         return APIResponce(
             status_code=status.HTTP_200_OK,
             status="refused",
             data={
-                "search_results": {
-                    "points": []
-                },
+                "search_results": {"points": []},
                 "risk_level": risk["risk_level"],
                 "reason": risk["reason"],
             },
         )
 
-    query_embeddings = (
-        embedding_service.embed_text(
-            search_request.text,
-            document_type=DocumentTypeEnum.QUERY.value,
-        )
+    query_embeddings = embedding_service.embed_text(
+        search_request.text,
+        document_type=DocumentTypeEnum.QUERY.value,
     )
 
-    if (
-        query_embeddings is None
-        or len(query_embeddings) == 0
-    ):
+    if query_embeddings is None or len(query_embeddings) == 0:
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
             error="Query embedding generation failed",
         )
 
-    results = await vectordb.search_by_vector(
-        DataBaseEnums.DOCUMENTS_COLLECTION.value,
-        query_embeddings[0],
-        search_request.limit,
+    results = await vectordb.hybrid_search(
+        collection_name=DataBaseEnums.DOCUMENTS_COLLECTION.value,
+        query=search_request.text,
+        dense_vector=query_embeddings[0],
+        top_k=search_request.limit,
+        prefetch_limit=10,
     )
 
     if results is None:
@@ -231,17 +225,16 @@ async def search_by_vector(
     return APIResponce(
         status_code=status.HTTP_200_OK,
         status=ResponseStatusEnums.VECTORDB_SEARCH_SUCCESS.value,
-        data={
-            "search_results": results
-        },
+        data={"search_results": results},
     )
+
 
 @rag.post("/test-prompt", response_model=APIResponce)
 async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRequest):
     llm_service = request.app.state.llm_service
 
     risk = classify_input_risk(payload.query)
-    if risk["risk_level"] !=RiskLevel.SAFE and risk["risk_level"] in RiskLevel:
+    if risk["risk_level"] != RiskLevel.SAFE and risk["risk_level"] in RiskLevel:
         answer = build_safe_fallback_message(payload.language)
         citations, latency = [], 0.0
 
@@ -255,7 +248,7 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                 "latency_seconds": latency,
                 "citations": citations,
             },
-            error = risk["reason"]
+            error=risk["reason"],
         )
 
     try:
@@ -264,12 +257,12 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
         if not chunks_to_use:
             vectordb = request.app.state.vectordb
             embedding_service = request.app.state.embedding_service
-            query_embeddings = embedding_service.embed_text(payload.query, document_type=DocumentTypeEnum.QUERY.value)
+            query_embeddings = embedding_service.embed_text(
+                payload.query, document_type=DocumentTypeEnum.QUERY.value
+            )
 
             search_results = await vectordb.search_by_vector(
-                DataBaseEnums.DOCUMENTS_COLLECTION.value,
-                query_embeddings[0],
-                5
+                DataBaseEnums.DOCUMENTS_COLLECTION.value, query_embeddings[0], 5
             )
 
             if search_results and hasattr(search_results, "points"):
@@ -277,9 +270,15 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                 for res in search_results.points:
                     p_load = res.payload or {}
                     page_nums = p_load["page_numbers"]
-                    page_num = page_nums[0] if isinstance(page_nums, list) and page_nums else 1
+                    page_num = (
+                        page_nums[0] if isinstance(page_nums, list) and page_nums else 1
+                    )
                     sections = p_load["section_headings"]
-                    section_title = sections[0] if isinstance(sections, list) and sections else "General Recommendations"
+                    section_title = (
+                        sections[0]
+                        if isinstance(sections, list) and sections
+                        else "General Recommendations"
+                    )
 
                     chunks_to_use.append(
                         MockChunkInput(
@@ -288,16 +287,15 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                             page_number=page_num,
                             section=section_title,
                             text=p_load["text"],
-                            score=res.score or 0.0
+                            score=res.score or 0.0,
                         )
                     )
             else:
                 return APIResponce(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
-                            error="No relevant chunks"
-                        )
-
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
+                    error="No relevant chunks",
+                )
 
         gate_result = pre_generation_gate(payload.query, chunks_to_use)
         if not gate_result["allow"]:
@@ -312,15 +310,15 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                     "latency_seconds": 0.0,
                     "citations": chunks_to_use,
                     "gate_reason": gate_result["reason"],
-                    "top_score": gate_result["top_score"]
-                }
+                    "top_score": gate_result["top_score"],
+                },
             )
 
         answer, latency, citations = await llm_service.generate_rag_response(
             query=payload.query,
             chunks=chunks_to_use,
             persona=payload.persona,
-            language=payload.language
+            language=payload.language,
         )
         print("citations", citations)
 
@@ -338,9 +336,7 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                     "query": payload.query,
                     "persona": payload.persona.value,
                     "language": payload.language.value,
-                    "answer": build_safe_fallback_message(
-                        payload.language
-                    ),
+                    "answer": build_safe_fallback_message(payload.language),
                     "latency_seconds": latency,
                     "citations": [],
                     "is_refusal": True,
@@ -361,16 +357,18 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
                 "citations": citations,
                 "is_refusal": validation["is_refusal"],
                 "validation_reason": validation["reason"],
-            }
+            },
         )
     except Exception as e:
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status="failed",
-            error=str(e)
+            error=str(e),
         )
+
+
 # why local cooling, such as with ice packs or cold pads could be offered to woman?
-#what are not recommended in the postpartum period?
+# what are not recommended in the postpartum period?
 @rag.get("/playground", response_class=HTMLResponse)
 async def rag_playground_ui():
     html_content = """

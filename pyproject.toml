@@ -11,6 +11,7 @@ dependencies = [
     "docling-core>=2.91.0",
     "email-validator>=2.3.0",
     "fastapi>=0.141.1",
+    "fastembed>=0.8.0",
     "groq>=1.6.0",
     "jwt>=1.4.0",
     "mongomock-motor>=0.0.36",

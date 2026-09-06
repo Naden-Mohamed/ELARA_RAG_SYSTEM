@@ -1,7 +1,6 @@
 from models.enums.LLMEnums import DocumentTypeEnum
 from sentence_transformers import SentenceTransformer
 import logging
-from typing import List , Union, Optional
 
 class EmbeddingService:
     def __init__(self,
@@ -57,7 +56,7 @@ class EmbeddingService:
 
 
     # Batch Embedding
-    def embed_text(self, text: Union[str, List[str]], document_type: str = ""):
+    def embed_text(self, text: str | list[str], document_type: str = ""):
         if not self.client:
             self.logger.error("BGE model is not loaded. Call set_embedding_model() first.")
             return None
