@@ -1,7 +1,8 @@
 import asyncio
 import os
-from groq import AsyncGroq
+
 from dotenv import load_dotenv
+from groq import AsyncGroq
 
 # Load API keys from root .env
 load_dotenv()
@@ -17,15 +18,15 @@ MOCK_RETRIEVED_CHUNKS = [
         "doc_name": "WHO_MNH_Guidelines_2025.pdf",
         "page_number": 3,
         "section": "Recommendation 1. Birth Preparedness",
-        "text": "A Birth Preparedness and Complication Readiness (BPCR) plan contains: the desired place of birth, preferred birth attendant, closest emergency facility, funds for birth-related expenses, essential supplies, labour companion, transport arrangements, and identified compatible blood donors."
+        "text": "A Birth Preparedness and Complication Readiness (BPCR) plan contains: the desired place of birth, preferred birth attendant, closest emergency facility, funds for birth-related expenses, essential supplies, labour companion, transport arrangements, and identified compatible blood donors.",
     },
     {
         "chunk_id": "chunk_doc_001_p7",
         "doc_name": "WHO_MNH_Guidelines_2025.pdf",
         "page_number": 7,
         "section": "Recommendation 8. Companion of Choice",
-        "text": "Continuous companionship during labour and childbirth is strongly recommended. The companion of choice may be a partner, family member, doula, or community member based on the woman's preference."
-    }
+        "text": "Continuous companionship during labour and childbirth is strongly recommended. The companion of choice may be a partner, family member, doula, or community member based on the woman's preference.",
+    },
 ]
 
 
@@ -77,12 +78,12 @@ async def run_standalone_test():
     test_queries = [
         {
             "persona": "doctor",
-            "query": "What are the essential elements of a BPCR plan and is a birth companion formally recommended?"
+            "query": "What are the essential elements of a BPCR plan and is a birth companion formally recommended?",
         },
         {
             "persona": "mother",
-            "query": "What should I prepare for my birth plan, and can my partner stay in the delivery room?"
-        }
+            "query": "What should I prepare for my birth plan, and can my partner stay in the delivery room?",
+        },
     ]
 
     print("=" * 70)
@@ -104,10 +105,10 @@ async def run_standalone_test():
                 model=GENERATION_MODEL_ID,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.1,
-                max_tokens=600
+                max_tokens=600,
             )
 
             answer = response.choices[0].message.content

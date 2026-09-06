@@ -1,20 +1,23 @@
-from core.config import get_settings
-from models.enums.ResponceStatusEnum import ResponseStatusEnums
+import asyncio
+import logging
 import os
 import random
 import string
 from pathlib import Path
-from docling_core.transforms.chunker.tokenizer.huggingface import HuggingFaceTokenizer
-from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
-from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+
 from docling.datamodel.base_models import InputFormat
-from transformers import AutoTokenizer
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
+from docling_core.transforms.chunker.tokenizer.huggingface import HuggingFaceTokenizer
 from fastapi import UploadFile
-import logging
-import asyncio
+from transformers import AutoTokenizer
+
+from core.config import get_settings
+from models.enums.ResponceStatusEnum import ResponseStatusEnums
 
 logger = logging.getLogger(__name__)
+
 
 class DocumentParserService:
     def __init__(self) -> None:
@@ -22,21 +25,23 @@ class DocumentParserService:
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.files_path = os.path.join(self.base_dir, "data")
 
-    def generate_unique_filename(self, original_filename:str | None, lenght:int = 5):
+    def generate_unique_filename(self, original_filename: str | None, lenght: int = 5):
         characters = string.ascii_letters + string.digits
-        random_prefix = ''.join(random.choices(characters, k=lenght))
+        random_prefix = "".join(random.choices(characters, k=lenght))
         return f"{random_prefix}_{original_filename}"
-
-    
 
     def validate_uploaded_file(self, file: UploadFile):
         if file.content_type not in self.settings.FILE_ALLOWED_TYPES:
             return False, ResponseStatusEnums.FILE_TYPE_NOT_SUPPORTED.value
 
-        if file.size is None or file.size > self.settings.FILE_MAX_SIZE_MB* 1024 * 1024 :
+        if (
+            file.size is None
+            or file.size > self.settings.FILE_MAX_SIZE_MB * 1024 * 1024
+        ):
             return False, ResponseStatusEnums.FILE_SIZE_EXCEEDED.value
-        
+
         return True, ResponseStatusEnums.FILE_VALIDATED_SUCCESSFULLY.value
+
     def get_file_content(self, file_path: str):
         """
         Accepts a full absolute path. Returns a Docling DoclingDocument or None.
@@ -47,7 +52,7 @@ class DocumentParserService:
 
         try:
             pipeline_options = PdfPipelineOptions()
-            pipeline_options.do_ocr = False          
+            pipeline_options.do_ocr = False
             pipeline_options.do_table_structure = True
 
             converter = DocumentConverter(
@@ -56,7 +61,10 @@ class DocumentParserService:
                 }
             )
             # synchronous CPU-bound
-            result = asyncio.run_coroutine_threadsafe(asyncio.to_thread(converter.convert, Path(file_path)), asyncio.get_event_loop())
+            result = asyncio.run_coroutine_threadsafe(
+                asyncio.to_thread(converter.convert, Path(file_path)),
+                asyncio.get_event_loop(),
+            )
             return result.result().document
         except Exception as e:
             logger.error(f"Docling conversion failed for {file_path}: {e}")
@@ -82,7 +90,6 @@ class DocumentParserService:
         processed_chunks = []
 
         for idx, chunk in enumerate(chunk_iter):
-
             contextualized_text = chunker.contextualize(chunk=chunk)
 
             # Extract Docling metadata from chunk.meta
@@ -103,23 +110,29 @@ class DocumentParserService:
 
             page_numbers = sorted(set(page_numbers))
 
-            processed_chunks.append({
-                # What gets embedded and stored as searchable text
-                "text": contextualized_text,
-                # Raw text without heading context (useful for display)
-                "raw_text": chunk.text,
-                "metadata": {
-                    "chunk_index": idx,
-                    "document_name": document,
-                    "page_numbers": page_numbers,               # [3, 4]
-                    "section_headings": headings,               # ["Chapter 2", "Newton's Laws"]
-                    "element_types": list(set(element_types)),  # ["TextItem", "TableItem"]
-                    "token_count": tokenizer.count_tokens(contextualized_text),
-                    "has_table": any("Table" in t for t in element_types),
-                    "has_figure": any("Figure" in t or "Picture" in t for t in element_types),
-                    "chunk_type": self._classify_chunk_type(element_types),
+            processed_chunks.append(
+                {
+                    # What gets embedded and stored as searchable text
+                    "text": contextualized_text,
+                    # Raw text without heading context (useful for display)
+                    "raw_text": chunk.text,
+                    "metadata": {
+                        "chunk_index": idx,
+                        "document_name": document,
+                        "page_numbers": page_numbers,  # [3, 4]
+                        "section_headings": headings,  # ["Chapter 2", "Newton's Laws"]
+                        "element_types": list(
+                            set(element_types)
+                        ),  # ["TextItem", "TableItem"]
+                        "token_count": tokenizer.count_tokens(contextualized_text),
+                        "has_table": any("Table" in t for t in element_types),
+                        "has_figure": any(
+                            "Figure" in t or "Picture" in t for t in element_types
+                        ),
+                        "chunk_type": self._classify_chunk_type(element_types),
+                    },
                 }
-            })
+            )
 
         return processed_chunks
 

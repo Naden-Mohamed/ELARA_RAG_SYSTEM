@@ -1,13 +1,15 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class MessageItemDTO(BaseModel):
     message_id: str
     role: str
     content: str
-    citations: List[dict] = []
+    citations: list[dict] = []
     created_at: datetime
+
 
 class ChatHistoryResponse(BaseModel):
     chat_id: str
@@ -16,7 +18,8 @@ class ChatHistoryResponse(BaseModel):
     page: int
     page_size: int
     has_more: bool
-    messages: List[MessageItemDTO]
+    messages: list[MessageItemDTO]
+
 
 class ChatSummaryDTO(BaseModel):
     chat_id: str

@@ -40,19 +40,21 @@ class TestValidateUploadedFile:
 
 
 class TestFilenameSanitization:
-
     def test_generated_filename_has_random_prefix(self, service):
         name = service.generate_unique_filename("report.pdf")
         assert name.endswith("_report.pdf")
         prefix = name.split("_")[0]
         assert len(prefix) == 5
 
-    @pytest.mark.parametrize("malicious_name", [
-        "../../etc/passwd",
-        "../../../secrets.env",
-        "..\\..\\windows\\system32\\config",
-        "/etc/passwd",
-    ])
+    @pytest.mark.parametrize(
+        "malicious_name",
+        [
+            "../../etc/passwd",
+            "../../../secrets.env",
+            "..\\..\\windows\\system32\\config",
+            "/etc/passwd",
+        ],
+    )
     def test_path_traversal_is_stripped(self, service, malicious_name):
         result = service.generate_unique_filename(malicious_name)
         assert "/" not in result
@@ -61,4 +63,4 @@ class TestFilenameSanitization:
 
     def test_none_filename_does_not_crash(self, service):
         result = service.generate_unique_filename(None)
-        assert result 
+        assert result

@@ -1,7 +1,10 @@
 # services/reranker.py
-from sentence_transformers import CrossEncoder
-from models.data_chunk import DataChunk, RerankedChunk
 import asyncio
+
+from sentence_transformers import CrossEncoder
+
+from models.data_chunk import DataChunk, RerankedChunk
+
 
 class RerankerService:
     """Reorders a candidate set of retrieved chunks by query-relevance using a cross-encoder."""
@@ -28,18 +31,22 @@ class RerankerService:
             score descending (higher = more relevant). The returned score
             replaces each document's original retrieval score. Returns []
             if candidates is empty.
-        """        
+        """
         if not candidates:
             return []
 
         pairs = [(query, c.chunk_text) for c in candidates]
 
-        scores = await asyncio.to_thread(self.model.predict, pairs)  # higher = more relevant
+        scores = await asyncio.to_thread(
+            self.model.predict, pairs
+        )  # higher = more relevant
 
         reranked = sorted(
             zip(candidates, scores), key=lambda pair: pair[1], reverse=True
         )
         return [
-            RerankedChunk(text=doc.chunk_text, score=float(score), metadata=doc.chunk_metadata)
+            RerankedChunk(
+                text=doc.chunk_text, score=float(score), metadata=doc.chunk_metadata
+            )
             for doc, score in reranked[:top_k]
         ]

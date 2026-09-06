@@ -14,22 +14,23 @@ Design:
   chat_router / rag_router (that's how the app currently wires it) so no real
   Groq API call ever happens in tests.
 """
+
+import math
 import os
 import sys
-import math
-import asyncio
 from pathlib import Path
-from datetime import datetime, timezone
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 # --- 1. Make `src/` importable, and set required env vars before any app import ---
 SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
 
-os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-please-do-not-use-in-prod-32chars")
+os.environ.setdefault(
+    "JWT_SECRET_KEY", "test-secret-key-please-do-not-use-in-prod-32chars"
+)
 os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017")
 os.environ.setdefault("MONGODB_DB_NAME", "elara_test")
 os.environ.setdefault("QDRANT_URL", "http://localhost:6333")
@@ -53,6 +54,7 @@ def _stub_heavy_optional_dependency(module_name: str, attrs: dict):
     """
     import sys
     import types
+
     try:
         __import__(module_name)
     except ImportError:
@@ -72,22 +74,35 @@ _stub_heavy_optional_dependency("docling_core.transforms", {})
 _stub_heavy_optional_dependency("docling_core.transforms.chunker", {})
 _stub_heavy_optional_dependency("docling_core.transforms.chunker.tokenizer", {})
 _stub_heavy_optional_dependency(
-    "docling_core.transforms.chunker.tokenizer.huggingface", {"HuggingFaceTokenizer": _DummyClass}
+    "docling_core.transforms.chunker.tokenizer.huggingface",
+    {"HuggingFaceTokenizer": _DummyClass},
 )
 _stub_heavy_optional_dependency(
     "docling_core.transforms.chunker.hybrid_chunker", {"HybridChunker": _DummyClass}
 )
 _stub_heavy_optional_dependency("docling", {})
-_stub_heavy_optional_dependency("docling.document_converter", {
-    "DocumentConverter": _DummyClass, "PdfFormatOption": _DummyClass,
-})
+_stub_heavy_optional_dependency(
+    "docling.document_converter",
+    {
+        "DocumentConverter": _DummyClass,
+        "PdfFormatOption": _DummyClass,
+    },
+)
 _stub_heavy_optional_dependency("docling.datamodel", {})
-_stub_heavy_optional_dependency("docling.datamodel.pipeline_options", {"PdfPipelineOptions": _DummyClass})
-_stub_heavy_optional_dependency("docling.datamodel.base_models", {"InputFormat": _DummyClass})
+_stub_heavy_optional_dependency(
+    "docling.datamodel.pipeline_options", {"PdfPipelineOptions": _DummyClass}
+)
+_stub_heavy_optional_dependency(
+    "docling.datamodel.base_models", {"InputFormat": _DummyClass}
+)
 _stub_heavy_optional_dependency("transformers", {"AutoTokenizer": _DummyClass})
-_stub_heavy_optional_dependency("sentence_transformers", {
-    "SentenceTransformer": _DummyClass, "CrossEncoder": _DummyClass,
-})
+_stub_heavy_optional_dependency(
+    "sentence_transformers",
+    {
+        "SentenceTransformer": _DummyClass,
+        "CrossEncoder": _DummyClass,
+    },
+)
 
 
 # ---------------------------------------------------------------------------
@@ -122,9 +137,11 @@ class FakeQdrant:
         return collection_name in self.collections
 
     async def create_collection(self, collection_name, embedding_size, do_reset=0):
-        if collection_name in self.collections and do_reset:
-            self.collections[collection_name] = []
-        elif collection_name not in self.collections:
+        if (
+            collection_name in self.collections
+            and do_reset
+            or collection_name not in self.collections
+        ):
             self.collections[collection_name] = []
         return True
 
@@ -137,16 +154,30 @@ class FakeQdrant:
             return None
         return {"points_count": len(self.collections[collection_name])}
 
-    async def insert_many(self, collection_name, texts, vectors, record_ids=None,
-                           metadatas=None, batch_size=50):
+    async def insert_many(
+        self,
+        collection_name,
+        texts,
+        vectors,
+        record_ids=None,
+        metadatas=None,
+        batch_size=50,
+    ):
         if collection_name not in self.collections:
-            await self.create_collection(collection_name, len(vectors[0]) if vectors else 0)
+            await self.create_collection(
+                collection_name, len(vectors[0]) if vectors else 0
+            )
         metadatas = metadatas or [{} for _ in texts]
         record_ids = record_ids or [str(i) for i in range(len(texts))]
         for rid, text, vec, meta in zip(record_ids, texts, vectors, metadatas):
-            self.collections[collection_name].append({
-                "id": rid, "text": text, "vector": vec, "payload": {**meta, "text": text},
-            })
+            self.collections[collection_name].append(
+                {
+                    "id": rid,
+                    "text": text,
+                    "vector": vec,
+                    "payload": {**meta, "text": text},
+                }
+            )
         return True
 
     async def search_by_vector(self, collection_name, vector, top_k=5):
@@ -194,20 +225,38 @@ class FakeEmbeddingService:
 class FakeLLMService:
     """Mimics services.llm_service.LLMService's public async methods."""
 
-    def __init__(self, canned_answer: str = "This is a test answer [Doc: test.pdf, Page: 1, Sec: Intro]."):
+    def __init__(
+        self,
+        canned_answer: str = "This is a test answer [Doc: test.pdf, Page: 1, Sec: Intro].",
+    ):
         self.canned_answer = canned_answer
         self.calls = []
 
     async def generate_rag_response(self, query, chunks, persona, language):
-        self.calls.append({"query": query, "chunks": chunks, "persona": persona, "language": language})
+        self.calls.append(
+            {"query": query, "chunks": chunks, "persona": persona, "language": language}
+        )
         return self.canned_answer, 0.01, ["[Doc: test.pdf, Page: 1, Sec: Intro]"]
 
-    async def generate_chat_response(self, query, chunks, persona, language, history,
-                                      mother_profile=None, dynamic_memories=None):
-        self.calls.append({
-            "query": query, "chunks": chunks, "persona": persona, "language": language,
-            "history": history,
-        })
+    async def generate_chat_response(
+        self,
+        query,
+        chunks,
+        persona,
+        language,
+        history,
+        mother_profile=None,
+        dynamic_memories=None,
+    ):
+        self.calls.append(
+            {
+                "query": query,
+                "chunks": chunks,
+                "persona": persona,
+                "language": language,
+                "history": history,
+            }
+        )
         return self.canned_answer, 0.01, ["[Doc: test.pdf, Page: 1, Sec: Intro]"]
 
 
@@ -218,6 +267,7 @@ class FakeLLMService:
 async def mongo_db():
     """In-memory Motor-compatible DB via mongomock-motor. Fresh per test."""
     from mongomock_motor import AsyncMongoMockClient
+
     client = AsyncMongoMockClient()
     yield client["elara_test"]
     client.close()
@@ -239,7 +289,9 @@ def fake_llm_service():
 
 
 @pytest_asyncio.fixture
-async def app(mongo_db, fake_vectordb, fake_embedding_service, fake_llm_service, monkeypatch):
+async def app(
+    mongo_db, fake_vectordb, fake_embedding_service, fake_llm_service, monkeypatch
+):
     """
     FastAPI app with test doubles injected directly into app.state,
     bypassing the real lifespan (no live Mongo/Qdrant/model download).
@@ -250,8 +302,12 @@ async def app(mongo_db, fake_vectordb, fake_embedding_service, fake_llm_service,
     from routers import chat_router as chat_router_module
     from routers import rag_router as rag_router_module
 
-    monkeypatch.setattr(chat_router_module, "llm_service", fake_llm_service, raising=False)
-    monkeypatch.setattr(rag_router_module, "llm_service", fake_llm_service, raising=False)
+    monkeypatch.setattr(
+        chat_router_module, "llm_service", fake_llm_service, raising=False
+    )
+    monkeypatch.setattr(
+        rag_router_module, "llm_service", fake_llm_service, raising=False
+    )
 
     fastapi_app = main_module.app
     fastapi_app.state.db_client = mongo_db

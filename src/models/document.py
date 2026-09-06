@@ -1,11 +1,13 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from bson.objectid import ObjectId
 from datetime import datetime
+
+from bson.objectid import ObjectId
+from pydantic import BaseModel, Field
+
 from models.enums.DocumentStatusEnum import DocumentStatusEnums
 
+
 class Document(BaseModel):
-    id: Optional[ObjectId] = Field(None, alias="_id")
+    id: ObjectId | None = Field(None, alias="_id")
     doc_name: str | None = None
     doc_path: str | None = None
     doc_type: str | None = None
@@ -15,7 +17,7 @@ class Document(BaseModel):
     chunk_count: int | None = None
     error_message: str | None = None
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
-    processed_at: Optional[datetime] = None
+    processed_at: datetime | None = None
 
     class Config:
         arbitrary_types_allowed = True

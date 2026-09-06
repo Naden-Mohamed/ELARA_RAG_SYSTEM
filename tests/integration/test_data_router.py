@@ -1,5 +1,5 @@
 import io
-import os
+
 import pytest
 
 pytestmark = pytest.mark.integration
@@ -24,7 +24,9 @@ def _patch_upload_dir(monkeypatch, tmp_path):
         original_init(self)
         self.files_path = str(tmp_path)
 
-    monkeypatch.setattr(data_service_module.DocumentParserService, "__init__", patched_init)
+    monkeypatch.setattr(
+        data_service_module.DocumentParserService, "__init__", patched_init
+    )
 
 
 class TestUploadRequiresAuth:
@@ -42,14 +44,18 @@ class TestUploadRequiresAuth:
 
 class TestUpload:
     @pytest.mark.asyncio
-    async def test_upload_valid_pdf_succeeds(self, client, registered_user, tmp_path, monkeypatch):
+    async def test_upload_valid_pdf_succeeds(
+        self, client, registered_user, tmp_path, monkeypatch
+    ):
         headers, _, _ = registered_user
         _patch_upload_dir(monkeypatch, tmp_path)
 
         files = {"file": ("resume.pdf", _pdf_bytes(), "application/pdf")}
         resp = await client.post("/data/upload", headers=headers, files=files)
         body = resp.json()
-        assert body["status"] == "success" or "FILE_UPLOADED" in str(body.get("status", ""))
+        assert body["status"] == "success" or "FILE_UPLOADED" in str(
+            body.get("status", "")
+        )
         assert "document_id" in body["data"]
 
     @pytest.mark.asyncio
@@ -77,7 +83,10 @@ class TestPathTraversalRegression:
 
         files = {"file": ("../../../evil.pdf", _pdf_bytes(), "application/pdf")}
         resp = await client.post("/data/upload", headers=headers, files=files)
-        assert resp.status_code in (200, 201) or resp.json()["status_code"] in (200, 201)
+        assert resp.status_code in (200, 201) or resp.json()["status_code"] in (
+            200,
+            201,
+        )
 
         # Nothing should have been written above tmp_path
         escaped_path = tmp_path.parent.parent.parent / "evil.pdf"
@@ -91,10 +100,14 @@ class TestPathTraversalRegression:
 
 class TestIngestRequiresValidDocument:
     @pytest.mark.asyncio
-    async def test_ingest_unknown_document_id_returns_404(self, client, registered_user):
+    async def test_ingest_unknown_document_id_returns_404(
+        self, client, registered_user
+    ):
         headers, _, _ = registered_user
         resp = await client.post(
-            "/data/ingest", headers=headers, params={"document_id": "64b64b64b64b64b64b64b64"}
+            "/data/ingest",
+            headers=headers,
+            params={"document_id": "64b64b64b64b64b64b64b64"},
         )
         body = resp.json()
         assert body["status_code"] == 404

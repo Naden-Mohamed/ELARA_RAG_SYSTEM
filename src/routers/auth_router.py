@@ -1,27 +1,38 @@
-from fastapi import APIRouter, Request, status, Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from models.api_responce import APIResponce
-from routers.schemas.auth_schemas import (
-    UserRegisterRequest,
-    UserLoginRequest,
-    TokenResponse,
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from core.security import (
+    create_access_token,
+    decode_access_token,
+    get_password_hash,
+    verify_password,
 )
 from db.user_model import UserModel
-from core.security import get_password_hash, verify_password, create_access_token, decode_access_token
+from models.api_responce import APIResponce
+from routers.schemas.auth_schemas import (
+    TokenResponse,
+    UserLoginRequest,
+    UserRegisterRequest,
+)
 
 auth_router = APIRouter(tags=["Authentication"], prefix="/auth")
 security = HTTPBearer()
 
 
 # Dependency to get the current authenticated user
-async def get_current_user(request: Request, creds: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(
+    request: Request, creds: HTTPAuthorizationCredentials = Depends(security)
+):
     payload = decode_access_token(creds.credentials)
     if not payload or "sub" not in payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired authentication credentials.")
+        raise HTTPException(
+            status_code=401, detail="Invalid or expired authentication credentials."
+        )
     user = await UserModel(request.app.state.db_client).get_by_id(payload["sub"])
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     return user
+
 
 @auth_router.post("/register", response_model=APIResponce)
 async def register(request: Request, payload: UserRegisterRequest):
@@ -34,7 +45,7 @@ async def register(request: Request, payload: UserRegisterRequest):
         return APIResponce(
             status_code=status.HTTP_400_BAD_REQUEST,
             status="failed",
-            error="Email address already registered."
+            error="Email address already registered.",
         )
 
     # Hash Password and Prepare Document
@@ -46,7 +57,9 @@ async def register(request: Request, payload: UserRegisterRequest):
     user_id_str = str(new_user["_id"])
 
     # Generate JWT Token directly on register
-    token = create_access_token(data={"sub": user_id_str, "persona": new_user["persona"]})
+    token = create_access_token(
+        data={"sub": user_id_str, "persona": new_user["persona"]}
+    )
 
     return APIResponce(
         status_code=status.HTTP_201_CREATED,
@@ -55,8 +68,8 @@ async def register(request: Request, payload: UserRegisterRequest):
             access_token=token,
             user_id=user_id_str,
             full_name=new_user["full_name"],
-            persona=new_user["persona"]
-        ).dict()
+            persona=new_user["persona"],
+        ).dict(),
     )
 
 
@@ -69,7 +82,7 @@ async def login(request: Request, payload: UserLoginRequest):
         return APIResponce(
             status_code=status.HTTP_401_UNAUTHORIZED,
             status="failed",
-            error="Invalid email or password."
+            error="Invalid email or password.",
         )
 
     user_id_str = str(user["_id"])
@@ -82,8 +95,8 @@ async def login(request: Request, payload: UserLoginRequest):
             access_token=token,
             user_id=user_id_str,
             full_name=user["full_name"],
-            persona=user["persona"]
-        ).dict()
+            persona=user["persona"],
+        ).dict(),
     )
 
 
@@ -92,9 +105,7 @@ async def get_my_profile(current_user: dict = Depends(get_current_user)):
     """Returns the authenticated user data including clinical and mother profile."""
     current_user["_id"] = str(current_user["_id"])
     current_user.pop("hashed_password", None)
-    
+
     return APIResponce(
-        status_code=status.HTTP_200_OK,
-        status="success",
-        data=current_user
+        status_code=status.HTTP_200_OK, status="success", data=current_user
     )

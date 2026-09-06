@@ -1,12 +1,17 @@
-from models.enums.LLMEnums import DocumentTypeEnum
-from sentence_transformers import SentenceTransformer
 import logging
 
+from sentence_transformers import SentenceTransformer
+
+from models.enums.LLMEnums import DocumentTypeEnum
+
+
 class EmbeddingService:
-    def __init__(self,
-                 default_input_max_characters: int = 1000,
-                 default_generation_max_output_tokens: int = 1000,
-                 default_generation_temperature: float = 0.1):
+    def __init__(
+        self,
+        default_input_max_characters: int = 1000,
+        default_generation_max_output_tokens: int = 1000,
+        default_generation_temperature: float = 0.1,
+    ):
 
         self.default_input_max_characters = default_input_max_characters
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
@@ -14,7 +19,7 @@ class EmbeddingService:
 
         self.embedding_model_id = None
         self.embedding_size = None
-        self.client = None  
+        self.client = None
 
         self.logger = logging.getLogger(__name__)
 
@@ -24,7 +29,7 @@ class EmbeddingService:
         try:
             self.client = SentenceTransformer(
                 model_id,
-                trust_remote_code=True  # required for BAAI/bge-multilingual-gemma2
+                trust_remote_code=True,  # required for BAAI/bge-multilingual-gemma2
             )
             actual_dim = self.client.get_embedding_dimension()
             if actual_dim != embedding_size:
@@ -51,20 +56,21 @@ class EmbeddingService:
             self.logger.warning(
                 f"Input text exceeds maximum character limit of {self.default_input_max_characters}. Truncating."
             )
-            return text[:self.default_input_max_characters]
+            return text[: self.default_input_max_characters]
         return text
-
 
     # Batch Embedding
     def embed_text(self, text: str | list[str], document_type: str = ""):
         if not self.client:
-            self.logger.error("BGE model is not loaded. Call set_embedding_model() first.")
+            self.logger.error(
+                "BGE model is not loaded. Call set_embedding_model() first."
+            )
             return None
 
         if not self.embedding_model_id:
             self.logger.error("Embedding model for BGE was not set.")
             return None
-        
+
         if isinstance(text, str):
             text = [text]
 
@@ -81,7 +87,7 @@ class EmbeddingService:
 
             embedding = self.client.encode(
                 [instruction + t for t in text],
-                normalize_embeddings=True  # recommended for BGE models
+                normalize_embeddings=True,  # recommended for BGE models
             )
 
             if embedding is None or len(embedding) == 0:
@@ -93,4 +99,3 @@ class EmbeddingService:
         except Exception as e:
             self.logger.error(f"BGE embedding error: {e}")
             raise
-

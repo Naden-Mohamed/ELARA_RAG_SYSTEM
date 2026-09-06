@@ -1,4 +1,4 @@
-from routers.schemas.rag_requests import UserPersonaEnum, LanguageEnum
+from routers.schemas.rag_requests import LanguageEnum, UserPersonaEnum
 
 # -------------------------------------------------------------
 # Refusal marker (defined first: BASE_RULES below references it)
@@ -46,7 +46,6 @@ BASE_RULES_EN = (
 )
 
 
-
 # -------------------------------------------------------------
 # Persona-Specific Guardrails & Directives
 # -------------------------------------------------------------
@@ -73,8 +72,10 @@ PERSONA_RULES = {
         "  * أجب بدقة ومباشرة على 'آخر رسالة فقط' أرسلها المستخدم.\n"
         "  * لا تكرر النصائح والتحذيرات التي ذكرتها بالفعل في الرسائل السابقة، بل ابنِ عليها وقدم خطوات عملية جديدة تناسب استفسار المستخدم الحالي وموقفه."
     ),
-    (UserPersonaEnum.GENERAL, LanguageEnum.AR): "\nالجمهور المستهدف: عام.\n- قدم إجابة مباشرة وموثقة بلغة واضحة وموضوعية.",
-
+    (
+        UserPersonaEnum.GENERAL,
+        LanguageEnum.AR,
+    ): "\nالجمهور المستهدف: عام.\n- قدم إجابة مباشرة وموثقة بلغة واضحة وموضوعية.",
     (UserPersonaEnum.DOCTOR, LanguageEnum.EN): (
         "\nTARGET AUDIENCE: DOCTOR / CLINICIAN\n"
         "- Tone: Highly clinical, formal, concise, and evidence-driven.\n"
@@ -92,7 +93,10 @@ PERSONA_RULES = {
         "- Proactive Clarification Protocol: If critical context is missing from the mother's query, address the available part using documents first, then politely ask one targeted clarifying question.\n"
         "- Multi-Turn Management: Answer strictly the latest message and build upon previous context without redundant warnings."
     ),
-    (UserPersonaEnum.GENERAL, LanguageEnum.EN): "\nTARGET AUDIENCE: GENERAL.\n- Provide an objective, grounded answer with clear citations."
+    (
+        UserPersonaEnum.GENERAL,
+        LanguageEnum.EN,
+    ): "\nTARGET AUDIENCE: GENERAL.\n- Provide an objective, grounded answer with clear citations.",
 }
 
 # -------------------------------------------------------------
@@ -101,12 +105,12 @@ PERSONA_RULES = {
 
 USER_PROMPT_TEMPLATES = {
     LanguageEnum.AR: "سياق المستندات المرفقة:\n{context}\nسؤال المستخدم: {query}\n\nالإجابة المطلوبة مع الاستشهادات الدقيقة:",
-    LanguageEnum.EN: "Context Excerpts:\n{context}\nUser Question: {query}\n\nAnswer with precise inline citations:"
+    LanguageEnum.EN: "Context Excerpts:\n{context}\nUser Question: {query}\n\nAnswer with precise inline citations:",
 }
 
 SOURCE_HEADER_TEMPLATES = {
     LanguageEnum.AR: "--- [المصدر #{idx}] ---\nالمستند: {doc_name} | ص: {page_number} | القسم: {section}\nالمحتوى: {text}\n\n",
-    LanguageEnum.EN: "--- [SOURCE #{idx}] ---\nDoc: {doc_name} | Page: {page_number} | Sec: {section}\nContent: {text}\n\n"
+    LanguageEnum.EN: "--- [SOURCE #{idx}] ---\nDoc: {doc_name} | Page: {page_number} | Sec: {section}\nContent: {text}\n\n",
 }
 
 # -------------------------------------------------------------

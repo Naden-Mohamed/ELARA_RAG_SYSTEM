@@ -1,34 +1,27 @@
-import os
-from bson import ObjectId
 import logging
-from fastapi import APIRouter, Request, status, HTTPException
+
+from fastapi import APIRouter, Request, status
 from fastapi.responses import HTMLResponse
 
-from models.api_responce import APIResponce
-from models.enums.ResponceStatusEnum import ResponseStatusEnums
-from models.enums.DocumentStatusEnum import DocumentStatusEnums
-from models.enums.DataBaseEnum import DataBaseEnums
-from models.enums.LLMEnums import DocumentTypeEnum
-from models.data_chunk import DataChunk
-
-from db.document_model import DocumentModel
+from core.config import get_settings
+from core.risk_classifier import RiskLevel, classify_input_risk
+from core.safety_gate import (
+    build_safe_fallback_message,
+    pre_generation_gate,
+    validate_grounded_response,
+)
 from db.chunk_model import ChunkModel
-
-from routers.schemas.data_requests import SearchRequest, PushRequest
+from db.document_model import DocumentModel
+from models.api_responce import APIResponce
+from models.enums.DataBaseEnum import DataBaseEnums
+from models.enums.DocumentStatusEnum import DocumentStatusEnums
+from models.enums.LLMEnums import DocumentTypeEnum
+from models.enums.ResponceStatusEnum import ResponseStatusEnums
+from routers.schemas.data_requests import PushRequest, SearchRequest
 from routers.schemas.rag_requests import (
-    QueryRequest,
     DirectPromptTestRequest,
     MockChunkInput,
 )
-from core.risk_classifier import classify_input_risk, RiskLevel
-from core.safety_gate import (
-    pre_generation_gate,
-    validate_grounded_response,
-    build_safe_fallback_message,
-)
-
-from services.llm_service import LLMService
-from core.config import get_settings
 
 logger = logging.getLogger(__name__)
 rag = APIRouter(tags=["api/rag"], prefix="/rag")
@@ -64,7 +57,6 @@ async def index_push(request: Request, push_request: PushRequest):
 
         batch_size = 32
         all_embeddings = []
-        all_sparse_embeddings = []
 
         for i in range(0, len(texts), batch_size):
             batch_texts = texts[i : i + batch_size]
@@ -436,7 +428,7 @@ async def rag_playground_ui():
                         <span id="resLatency" class="badge bg-light text-dark badge-persona border"></span>
                     </div>
                 </div>
-                
+
                 <div id="resAnswer" class="output-box mb-3"></div>
 
                 <div id="citationsContainer">
@@ -471,7 +463,7 @@ async def rag_playground_ui():
                         })
                     });
                     const resData = await res.json();
-                    
+
                     if (resData.status_code === 200) {
                         const data = resData.data;
                         const ansEl = document.getElementById('resAnswer');

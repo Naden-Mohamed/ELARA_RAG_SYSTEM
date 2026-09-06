@@ -1,15 +1,14 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from core.config import get_settings
-from motor.motor_asyncio import AsyncIOMotorClient
 from logging import getLogger
 
+from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
 
+from core.config import get_settings
+from db.qdrant_vectordb import Qdrant
 from routers import base_router, data_router, rag_router
 from routers.auth_router import auth_router
 from routers.chat_router import chat_router
-
-from db.qdrant_vectordb import Qdrant
 from services.embedding import EmbeddingService
 from services.llm_service import LLMService
 

@@ -1,7 +1,7 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
 from functools import lru_cache
 from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     SPARSE_VECTOR_NAME: str = "sparse"
 
     # File & Chunking
-    FILE_ALLOWED_TYPES: List[str] = ["text/plain", "application/pdf", ".docx"]
+    FILE_ALLOWED_TYPES: list[str] = ["text/plain", "application/pdf", ".docx"]
     FILE_MAX_SIZE_MB: int = 10
     FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512 KB
     USE_SIMPLE_CHUNKER: bool = False

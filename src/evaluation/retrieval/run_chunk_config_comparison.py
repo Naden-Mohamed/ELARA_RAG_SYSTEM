@@ -29,6 +29,7 @@ Usage (needs the full ML deps -- docling, sentence-transformers, torch):
 This does NOT touch your running app's Qdrant collection -- it creates and
 tears down its own temporary collections (elara_eval_chunkcfg_*).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,7 +43,7 @@ from typing import Any
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common import DATASET_PATH, label_relevance, load_evaluation_cases  # noqa: E402
+from common import DATASET_PATH, label_relevance, load_evaluation_cases
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -64,7 +65,9 @@ CHUNK_CONFIGS = [
 ]
 
 
-def apply_overlap(chunks: list[dict[str, Any]], overlap_tokens: int, tokenizer) -> list[dict[str, Any]]:
+def apply_overlap(
+    chunks: list[dict[str, Any]], overlap_tokens: int, tokenizer
+) -> list[dict[str, Any]]:
     """Real sliding-window overlap, applied after HybridChunker's structural
     chunking: prepends the tail of the previous chunk and appends the head of
     the next chunk to each chunk's embedded text. This is what get_chunks()'s
@@ -87,7 +90,11 @@ def apply_overlap(chunks: list[dict[str, Any]], overlap_tokens: int, tokenizer) 
     out = []
     for i, chunk in enumerate(chunks):
         prefix = tail_tokens(chunks[i - 1]["raw_text"], overlap_tokens) if i > 0 else ""
-        suffix = head_tokens(chunks[i + 1]["raw_text"], overlap_tokens) if i < len(chunks) - 1 else ""
+        suffix = (
+            head_tokens(chunks[i + 1]["raw_text"], overlap_tokens)
+            if i < len(chunks) - 1
+            else ""
+        )
         stitched = f"{prefix} {chunk['text']} {suffix}".strip()
         new_chunk = dict(chunk)
         new_chunk["text"] = stitched
@@ -96,7 +103,9 @@ def apply_overlap(chunks: list[dict[str, Any]], overlap_tokens: int, tokenizer) 
     return out
 
 
-async def build_and_index(pdf_path: Path, config: ChunkConfig, collection_suffix: str) -> tuple[str, int]:
+async def build_and_index(
+    pdf_path: Path, config: ChunkConfig, collection_suffix: str
+) -> tuple[str, int]:
     """Chunks pdf_path with `config`, embeds, and pushes into a fresh, isolated
     Qdrant collection. Returns (collection_name, chunk_count)."""
     from core.config import get_settings
@@ -111,13 +120,18 @@ async def build_and_index(pdf_path: Path, config: ChunkConfig, collection_suffix
     if document is None:
         raise RuntimeError(f"Docling could not parse {pdf_path}")
 
-    base_chunks = parser.get_chunks(document, chunk_size=config.chunk_size, chunk_overlap=0)
+    base_chunks = parser.get_chunks(
+        document, chunk_size=config.chunk_size, chunk_overlap=0
+    )
     if not base_chunks:
         raise RuntimeError(f"No chunks produced for config {config.name}")
 
     # Real overlap post-processing (see apply_overlap docstring).
-    from docling_core.transforms.chunker.tokenizer.huggingface import HuggingFaceTokenizer
+    from docling_core.transforms.chunker.tokenizer.huggingface import (
+        HuggingFaceTokenizer,
+    )
     from transformers import AutoTokenizer
+
     tokenizer = HuggingFaceTokenizer(
         tokenizer=AutoTokenizer.from_pretrained(settings.TOKENIZER_MODEL_ID),
         max_tokens=config.chunk_size,
@@ -125,7 +139,9 @@ async def build_and_index(pdf_path: Path, config: ChunkConfig, collection_suffix
     chunks = apply_overlap(base_chunks, config.overlap_tokens, tokenizer)
 
     embedder = EmbeddingService()
-    embedder.set_embedding_model(settings.BGE_EMBEDDING_MODEL_ID, settings.BGE_EMBEDDING_MODEL_SIZE)
+    embedder.set_embedding_model(
+        settings.BGE_EMBEDDING_MODEL_ID, settings.BGE_EMBEDDING_MODEL_SIZE
+    )
 
     texts = [c["text"] for c in chunks]
     vectors = embedder.embed_text(texts, document_type="document")
@@ -136,9 +152,14 @@ async def build_and_index(pdf_path: Path, config: ChunkConfig, collection_suffix
 
     qdrant = Qdrant()
     await qdrant.connect()
-    await qdrant.create_collection(collection_name, embedding_size=embedder.embedding_size, do_reset=1)
+    await qdrant.create_collection(
+        collection_name, embedding_size=embedder.embedding_size, do_reset=1
+    )
 
-    metadatas = [{**c["metadata"], "text": c["text"], "original_filename": pdf_path.name} for c in chunks]
+    metadatas = [
+        {**c["metadata"], "text": c["text"], "original_filename": pdf_path.name}
+        for c in chunks
+    ]
     await qdrant.insert_many(
         collection_name,
         texts=texts,
@@ -149,7 +170,9 @@ async def build_and_index(pdf_path: Path, config: ChunkConfig, collection_suffix
     return collection_name, len(chunks), qdrant, embedder
 
 
-async def search_collection(qdrant, embedder, collection_name: str, query: str, limit: int) -> list[dict[str, Any]]:
+async def search_collection(
+    qdrant, embedder, collection_name: str, query: str, limit: int
+) -> list[dict[str, Any]]:
     query_vec = embedder.embed_text(query, document_type="query")
     if query_vec is None:
         return []
@@ -158,10 +181,15 @@ async def search_collection(qdrant, embedder, collection_name: str, query: str, 
     results = await qdrant.search_by_vector(collection_name, vec, limit)
     if not results or not getattr(results, "points", None):
         return []
-    return [{"id": str(p.id), "score": float(p.score), "payload": p.payload or {}} for p in results.points]
+    return [
+        {"id": str(p.id), "score": float(p.score), "payload": p.payload or {}}
+        for p in results.points
+    ]
 
 
-def metrics_at_k(points: list[dict[str, Any]], case: dict[str, Any], k: int) -> dict[str, float]:
+def metrics_at_k(
+    points: list[dict[str, Any]], case: dict[str, Any], k: int
+) -> dict[str, float]:
     top_k = points[:k]
     labels = [label_relevance(p, case) for p in top_k]
     relevant_ranks = [i + 1 for i, l in enumerate(labels) if l["relevant"]]
@@ -175,7 +203,11 @@ def metrics_at_k(points: list[dict[str, Any]], case: dict[str, Any], k: int) -> 
 
 async def run_comparison(pdf_path: Path) -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    cases = [c for c in load_evaluation_cases(DATASET_PATH) if c.get("expected_status") == "answered"]
+    cases = [
+        c
+        for c in load_evaluation_cases(DATASET_PATH)
+        if c.get("expected_status") == "answered"
+    ]
 
     from db.qdrant_vectordb import Qdrant
 
@@ -185,26 +217,47 @@ async def run_comparison(pdf_path: Path) -> None:
 
     try:
         for config in CHUNK_CONFIGS:
-            print(f"\n{'=' * 70}\nIndexing with config: {config.name} (size={config.chunk_size}, overlap={config.overlap_tokens})\n{'=' * 70}")
-            collection_name, chunk_count, qdrant, embedder = await build_and_index(pdf_path, config, config.name)
+            print(
+                f"\n{'=' * 70}\nIndexing with config: {config.name} (size={config.chunk_size}, overlap={config.overlap_tokens})\n{'=' * 70}"
+            )
+            collection_name, chunk_count, qdrant, embedder = await build_and_index(
+                pdf_path, config, config.name
+            )
             collections_to_clean.append((qdrant, collection_name))
             print(f"  {chunk_count} chunks indexed into {collection_name}")
 
             for case in cases:
-                points = await search_collection(qdrant, embedder, collection_name, case["query"], max(TOP_K_VALUES))
+                points = await search_collection(
+                    qdrant, embedder, collection_name, case["query"], max(TOP_K_VALUES)
+                )
 
                 for k in TOP_K_VALUES:
                     m = metrics_at_k(points, case, k)
-                    metric_rows.append({"config": config.name, "chunk_size": config.chunk_size, "overlap_tokens": config.overlap_tokens, "id": case["id"], "top_k": k, **m})
+                    metric_rows.append(
+                        {
+                            "config": config.name,
+                            "chunk_size": config.chunk_size,
+                            "overlap_tokens": config.overlap_tokens,
+                            "id": case["id"],
+                            "top_k": k,
+                            **m,
+                        }
+                    )
 
                 labels = [label_relevance(p, case) for p in points]
                 for rank, (point, label) in enumerate(zip(points, labels), start=1):
-                    chunk_label_rows.append({
-                        "config": config.name, "id": case["id"], "rank": rank,
-                        "chunk_id": point["id"], "score": point["score"],
-                        "relevant": label["relevant"], "reason": label["reason"],
-                        "text_preview": point["payload"].get("text", "")[:200],
-                    })
+                    chunk_label_rows.append(
+                        {
+                            "config": config.name,
+                            "id": case["id"],
+                            "rank": rank,
+                            "chunk_id": point["id"],
+                            "score": point["score"],
+                            "relevant": label["relevant"],
+                            "reason": label["reason"],
+                            "text_preview": point["payload"].get("text", "")[:200],
+                        }
+                    )
     finally:
         for qdrant, collection_name in collections_to_clean:
             try:
@@ -222,7 +275,9 @@ async def run_comparison(pdf_path: Path) -> None:
     chunks_df.to_csv(chunks_path, index=False)
 
     summary = (
-        metrics_df.groupby(["config", "top_k"])[["precision_at_k", "recall_at_k", "mrr_at_k", "hit_at_k"]]
+        metrics_df.groupby(["config", "top_k"])[
+            ["precision_at_k", "recall_at_k", "mrr_at_k", "hit_at_k"]
+        ]
         .mean()
         .reset_index()
     )
@@ -238,7 +293,11 @@ async def run_comparison(pdf_path: Path) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Compare chunking configs end-to-end.")
-    parser.add_argument("--pdf", required=True, help="Path to the source PDF to chunk (e.g. data/who_guide.pdf)")
+    parser.add_argument(
+        "--pdf",
+        required=True,
+        help="Path to the source PDF to chunk (e.g. data/who_guide.pdf)",
+    )
     args = parser.parse_args()
 
     pdf_path = Path(args.pdf).resolve()

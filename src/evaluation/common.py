@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 DATASET_PATH = (
@@ -29,27 +28,19 @@ def load_evaluation_cases(
     """
 
     if not path.exists():
-        raise FileNotFoundError(
-            f"Evaluation dataset not found: {path}"
-        )
+        raise FileNotFoundError(f"Evaluation dataset not found: {path}")
 
-    text = path.read_text(
-        encoding="utf-8"
-    ).strip()
+    text = path.read_text(encoding="utf-8").strip()
 
     if not text:
-        raise ValueError(
-            f"Evaluation dataset is empty: {path}"
-        )
+        raise ValueError(f"Evaluation dataset is empty: {path}")
 
     # Support JSON array.
     if text.startswith("["):
         data = json.loads(text)
 
         if not isinstance(data, list):
-            raise ValueError(
-                "Evaluation dataset must contain a JSON list."
-            )
+            raise ValueError("Evaluation dataset must contain a JSON list.")
 
         return data
 
@@ -68,14 +59,10 @@ def load_evaluation_cases(
         try:
             item = json.loads(line)
         except json.JSONDecodeError as exc:
-            raise ValueError(
-                f"Invalid JSON on line {line_number}: {exc}"
-            ) from exc
+            raise ValueError(f"Invalid JSON on line {line_number}: {exc}") from exc
 
         if not isinstance(item, dict):
-            raise ValueError(
-                f"Line {line_number} is not a JSON object."
-            )
+            raise ValueError(f"Line {line_number} is not a JSON object.")
 
         cases.append(item)
 
@@ -86,11 +73,7 @@ def normalize_text(value: Any) -> str:
     if value is None:
         return ""
 
-    return " ".join(
-        str(value)
-        .lower()
-        .split()
-    )
+    return " ".join(str(value).lower().split())
 
 
 def get_pages(payload: dict[str, Any]) -> list[int]:
@@ -147,11 +130,7 @@ def get_sections(payload: dict[str, Any]) -> list[str]:
         return [sections]
 
     if isinstance(sections, list):
-        return [
-            str(section)
-            for section in sections
-            if section
-        ]
+        return [str(section) for section in sections if section]
 
     return [str(sections)]
 
@@ -268,7 +247,22 @@ def label_relevance(
     doc_overlap = document_token_overlap(payload, case)
 
     if page_ok:
-        return {"relevant": True, "reason": f"target_page within tolerance ({PAGE_TOLERANCE})", "keyword_coverage": coverage, "document_token_overlap": doc_overlap}
+        return {
+            "relevant": True,
+            "reason": f"target_page within tolerance ({PAGE_TOLERANCE})",
+            "keyword_coverage": coverage,
+            "document_token_overlap": doc_overlap,
+        }
     if coverage >= KEYWORD_RELEVANCE_THRESHOLD:
-        return {"relevant": True, "reason": f"keyword_coverage={coverage:.2f} >= {KEYWORD_RELEVANCE_THRESHOLD}", "keyword_coverage": coverage, "document_token_overlap": doc_overlap}
-    return {"relevant": False, "reason": f"keyword_coverage={coverage:.2f}, page not close, doc_overlap={doc_overlap}", "keyword_coverage": coverage, "document_token_overlap": doc_overlap}
+        return {
+            "relevant": True,
+            "reason": f"keyword_coverage={coverage:.2f} >= {KEYWORD_RELEVANCE_THRESHOLD}",
+            "keyword_coverage": coverage,
+            "document_token_overlap": doc_overlap,
+        }
+    return {
+        "relevant": False,
+        "reason": f"keyword_coverage={coverage:.2f}, page not close, doc_overlap={doc_overlap}",
+        "keyword_coverage": coverage,
+        "document_token_overlap": doc_overlap,
+    }

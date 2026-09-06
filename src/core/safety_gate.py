@@ -1,7 +1,7 @@
 import re
-from typing import List, Optional
+
 from core.config import get_settings
-from core.prompts import REFUSAL_MARKER_EN, REFUSAL_MARKER_AR
+from core.prompts import REFUSAL_MARKER_AR, REFUSAL_MARKER_EN
 from routers.schemas.rag_requests import MockChunkInput
 
 INJECTION_PATTERNS = [
@@ -29,13 +29,13 @@ PERSONAL_ADVICE_PATTERNS = [
 CITATION_DOC_PATTERN = re.compile(r"\[(?:Doc|المستند):\s*([^,]+),")
 
 
-def matches_any(text: str, patterns: List[str]) -> bool:
+def matches_any(text: str, patterns: list[str]) -> bool:
     """Checks whether any regex pattern matches text (case-insensitive)."""
     lowered = text.lower()
     return any(re.search(pattern, lowered) for pattern in patterns)
 
 
-def pre_generation_gate(query: str, chunks: List[MockChunkInput]) -> dict:
+def pre_generation_gate(query: str, chunks: list[MockChunkInput]) -> dict:
     """Deterministic, pre-LLM safety gate. Runs before any Groq call is made.
 
     Returns:
@@ -51,7 +51,10 @@ def pre_generation_gate(query: str, chunks: List[MockChunkInput]) -> dict:
         }
 
     if not chunks:
-        return {"allow": False, "reason": "No relevant guideline passages were retrieved."}
+        return {
+            "allow": False,
+            "reason": "No relevant guideline passages were retrieved.",
+        }
 
     settings = get_settings()
     threshold = getattr(settings, "SIMILARITY_THRESHOLD", 0.50)
@@ -62,7 +65,11 @@ def pre_generation_gate(query: str, chunks: List[MockChunkInput]) -> dict:
             "reason": f"Retrieval confidence below threshold ({top_score:.3f} < {threshold:.3f}).",
         }
 
-    return {"allow": True, "reason": "Deterministic retrieval gate passed.", "top_score": top_score}
+    return {
+        "allow": True,
+        "reason": "Deterministic retrieval gate passed.",
+        "top_score": top_score,
+    }
 
 
 def is_model_refusal(answer: str) -> bool:
@@ -70,7 +77,9 @@ def is_model_refusal(answer: str) -> bool:
     return REFUSAL_MARKER_EN.lower() in answer.lower() or REFUSAL_MARKER_AR in answer
 
 
-def validate_grounded_response(answer: str, citations: List[str], chunks: List[MockChunkInput]) -> dict:
+def validate_grounded_response(
+    answer: str, citations: list[str], chunks: list[MockChunkInput]
+) -> dict:
     """Post-generation validation: catches missing or fabricated citations.
 
     A clean model-issued refusal always passes (it correctly has no citations).
@@ -82,7 +91,11 @@ def validate_grounded_response(answer: str, citations: List[str], chunks: List[M
         {"valid": bool, "is_refusal": bool, "reason": str}
     """
     if is_model_refusal(answer):
-        return {"valid": True, "is_refusal": True, "reason": "Model correctly refused due to missing evidence."}
+        return {
+            "valid": True,
+            "is_refusal": True,
+            "reason": "Model correctly refused due to missing evidence.",
+        }
 
     if not citations:
         return {
@@ -102,12 +115,17 @@ def validate_grounded_response(answer: str, citations: List[str], chunks: List[M
                 "reason": f"Citation references a document not present in retrieved context: {citation!r}",
             }
 
-    return {"valid": True, "is_refusal": False, "reason": "All citations verified against retrieved context."}
+    return {
+        "valid": True,
+        "is_refusal": False,
+        "reason": "All citations verified against retrieved context.",
+    }
 
 
 def build_safe_fallback_message(language) -> str:
     """Canned safe response used when the gate blocks generation or validation fails post-hoc."""
     from routers.schemas.rag_requests import LanguageEnum
+
     if language == LanguageEnum.AR:
         return REFUSAL_MARKER_AR
     return REFUSAL_MARKER_EN

@@ -1,30 +1,45 @@
-import os
-import json
-from typing import List, Optional, Literal
-from pydantic import BaseModel, Field
+from typing import Literal
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="ELARA Clinical Chat UI - Local Mock", version="1.0")
+
 
 class CitationDTO(BaseModel):
     document: str = Field(..., description="Exact document title from metadata")
     section: str = Field(..., description="Section name/number")
     page: int = Field(..., description="Page number")
 
+
 class FinalResponseSchema(BaseModel):
-    recommendation: str = Field(..., description="The direct answer or clinical recommendation")
-    evidence: str = Field(..., description="Direct excerpt or paraphrase from the retrieved evidence")
-    citations: List[CitationDTO] = Field(default=[], description="List of structured citations")
-    confidence: Literal["high", "medium", "low", "insufficient"] = Field(..., description="Confidence level based on evidence quality")
-    confidence_score: float = Field(..., description="Numerical confidence score between 0.0 and 1.0")
-    refusal_reason: Optional[str] = Field(default=None, description="Explanation if the system refuses to answer")
+    recommendation: str = Field(
+        ..., description="The direct answer or clinical recommendation"
+    )
+    evidence: str = Field(
+        ..., description="Direct excerpt or paraphrase from the retrieved evidence"
+    )
+    citations: list[CitationDTO] = Field(
+        default=[], description="List of structured citations"
+    )
+    confidence: Literal["high", "medium", "low", "insufficient"] = Field(
+        ..., description="Confidence level based on evidence quality"
+    )
+    confidence_score: float = Field(
+        ..., description="Numerical confidence score between 0.0 and 1.0"
+    )
+    refusal_reason: str | None = Field(
+        default=None, description="Explanation if the system refuses to answer"
+    )
+
 
 class ChatRequest(BaseModel):
     query: str
     persona: str = "mother"
     language: str = "ar"
-    history: List[dict] = []
+    history: list[dict] = []
+
 
 MOCK_KNOWLEDGE_BASE = [
     {
@@ -34,7 +49,7 @@ MOCK_KNOWLEDGE_BASE = [
         "page": 14,
         "text": "A Birth Preparedness and Complication Readiness (BPCR) plan contains the following elements: desired place of birth; preferred birth attendant; location of closest facility; funds for expenses; essential supplies; identified labour and birth companion; support for home; transport; and compatible blood donors.",
         "recommendation_ar": "تشمل خطة الاستعداد للولادة ومضاعفاتها: تحديد مكان الولادة المرغوب، اختيار مقدم الرعاية المفضل، معرفة أقرب منشأة صحية، تجهيز التكاليف المالية، المستلزمات الأساسية، وتحديد مرافق أثناء الولادة.",
-        "recommendation_en": "A BPCR plan includes: desired place of birth, preferred birth attendant, closest facility location, funds for expenses, essential supplies, and an identified birth companion."
+        "recommendation_en": "A BPCR plan includes: desired place of birth, preferred birth attendant, closest facility location, funds for expenses, essential supplies, and an identified birth companion.",
     },
     {
         "keywords": ["companion", "labour", "مرافق", "مرافقة", "شخص داعم"],
@@ -43,7 +58,7 @@ MOCK_KNOWLEDGE_BASE = [
         "page": 36,
         "text": "Continuous companionship during labour and birth is recommended for improving women’s satisfaction and outcomes. Women who had continuous support were less likely to have a negative experience.",
         "recommendation_ar": "يوصى بشدة بوجود مرافق أو شخص داعم بشكل مستمر أثناء المخاض والولادة لتحسين تجربة الأم ورضاها وتقليل التجارب السلبية.",
-        "recommendation_en": "Continuous companionship during labour and birth is recommended to improve women's satisfaction and clinical outcomes."
+        "recommendation_en": "Continuous companionship during labour and birth is recommended to improve women's satisfaction and clinical outcomes.",
     },
     {
         "keywords": ["iron", "nutrition", "حديد", "تغذية", "فيتامينات", "مكملات"],
@@ -52,18 +67,32 @@ MOCK_KNOWLEDGE_BASE = [
         "page": 22,
         "text": "Daily oral iron and folic acid supplementation is recommended for pregnant women to prevent maternal anaemia, puerperal sepsis, low birth weight, and preterm birth.",
         "recommendation_ar": "يوصى بتناول مكملات الحديد وحمض الفوليك يومياً للحامل للوقاية من فقر الدم ولضمان نمو صحي وتجنب الولادة المبكرة.",
-        "recommendation_en": "Daily oral iron and folic acid supplementation is recommended for pregnant women to prevent maternal anaemia and preterm birth."
-    }
+        "recommendation_en": "Daily oral iron and folic acid supplementation is recommended for pregnant women to prevent maternal anaemia and preterm birth.",
+    },
 ]
+
 
 class ElaraLocalPipeline:
     def __init__(self):
         self.confidence_threshold = 0.60
 
-    def run_pipeline(self, query: str, persona: str, language: str, history: List[dict]) -> dict:
+    def run_pipeline(
+        self, query: str, persona: str, language: str, history: list[dict]
+    ) -> dict:
         query_lower = query.lower()
-        
-        if any(term in query_lower for term in ["ignore", "prescribe", "dosage", "مسكنات", "أدوية", "باراسيتامول", "تجاهل"]):
+
+        if any(
+            term in query_lower
+            for term in [
+                "ignore",
+                "prescribe",
+                "dosage",
+                "مسكنات",
+                "أدوية",
+                "باراسيتامول",
+                "تجاهل",
+            ]
+        ):
             return {
                 "status": "REFUSED",
                 "output": FinalResponseSchema(
@@ -72,8 +101,8 @@ class ElaraLocalPipeline:
                     citations=[],
                     confidence="insufficient",
                     confidence_score=0.20,
-                    refusal_reason="أنا أسفة جداً، مش هقدر أساعدك في النقطة دي أو أكتب أي أدوية من نفسي عشان سلامتك. دايماً استشيري دكتورك المعالج أو شخص متخصص قبل ما تاخدي أي خطوة!"
-                ).model_dump()
+                    refusal_reason="أنا أسفة جداً، مش هقدر أساعدك في النقطة دي أو أكتب أي أدوية من نفسي عشان سلامتك. دايماً استشيري دكتورك المعالج أو شخص متخصص قبل ما تاخدي أي خطوة!",
+                ).model_dump(),
             }
 
         matched_chunks = []
@@ -93,20 +122,23 @@ class ElaraLocalPipeline:
                     citations=[],
                     confidence="insufficient",
                     confidence_score=round(best_score, 2),
-                    refusal_reason="عذراً يا حبيبتي، المعلومات دي مش متوفرة عندي في الأدلة الطبية المعتمدة حالياً. عشان نكون في أمان تام وسلامتك، يفضل تسألي طبيبك المختص وهو هيفيدك أكتر بكتير!"
-                ).model_dump()
+                    refusal_reason="عذراً يا حبيبتي، المعلومات دي مش متوفرة عندي في الأدلة الطبية المعتمدة حالياً. عشان نكون في أمان تام وسلامتك، يفضل تسألي طبيبك المختص وهو هيفيدك أكتر بكتير!",
+                ).model_dump(),
             }
 
         citations = [
             CitationDTO(
-                document=chunk["doc_name"],
-                section=chunk["section"],
-                page=chunk["page"]
-            ) for chunk in matched_chunks
+                document=chunk["doc_name"], section=chunk["section"], page=chunk["page"]
+            )
+            for chunk in matched_chunks
         ]
-        
+
         evidence_text = " | ".join([c["text"] for c in matched_chunks])
-        rec_text = matched_chunks[0]["recommendation_ar"] if language == "ar" else matched_chunks[0]["recommendation_en"]
+        rec_text = (
+            matched_chunks[0]["recommendation_ar"]
+            if language == "ar"
+            else matched_chunks[0]["recommendation_en"]
+        )
 
         success_output = FinalResponseSchema(
             recommendation=rec_text,
@@ -114,12 +146,14 @@ class ElaraLocalPipeline:
             citations=citations,
             confidence="high",
             confidence_score=best_score,
-            refusal_reason=None
+            refusal_reason=None,
         )
 
         return {"status": "SUCCESS", "output": success_output.model_dump()}
 
+
 pipeline = ElaraLocalPipeline()
+
 
 @app.post("/api/chat")
 async def chat_endpoint(payload: ChatRequest):
@@ -128,7 +162,7 @@ async def chat_endpoint(payload: ChatRequest):
             query=payload.query,
             persona=payload.persona,
             language=payload.language,
-            history=payload.history
+            history=payload.history,
         )
         return result
     except Exception as e:
@@ -140,9 +174,10 @@ async def chat_endpoint(payload: ChatRequest):
                 "citations": [],
                 "confidence": "insufficient",
                 "confidence_score": 0.0,
-                "refusal_reason": f"خطأ تقني: {str(e)}"
-            }
+                "refusal_reason": f"خطأ تقني: {e!s}",
+            },
         }
+
 
 @app.get("/", response_class=HTMLResponse)
 async def chat_ui():
@@ -183,7 +218,7 @@ async def chat_ui():
                     </select>
                 </div>
             </div>
-            
+
             <div id="chatBox" class="chat-box">
                 <div class="message bot-msg">
                     <b>ELARA:</b> أهلاً بكِ. أنا مساعدك الطبي المبني على الأدلة والإرشادات المعتمدة. تفضلي بطرح سؤالكِ حول رعاية الأم والطفل.
@@ -223,7 +258,7 @@ async def chat_ui():
                         body: JSON.stringify({ query, persona, language, history: chatHistory })
                     });
                     const data = await res.json();
-                    
+
                     document.getElementById(loadingId).remove();
 
                     if (data.status === "SUCCESS") {
@@ -234,7 +269,7 @@ async def chat_ui():
                             <div class="mt-2">
                                 <span class="meta-badge">Confidence: ${out.confidence.toUpperCase()} (${out.confidence_score * 100}%)</span>
                             </div>`;
-                        
+
                         if (out.citations && out.citations.length > 0) {
                             out.citations.forEach((cit, idx) => {
                                 html += `<div class="citation-box"><b>المرجع الموثق (${idx + 1}):</b> [${cit.document}, Section ${cit.section}, Page ${cit.page}]</div>`;

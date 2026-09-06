@@ -1,4 +1,5 @@
-from datetime import datetime, date, timezone
+from datetime import UTC, date, datetime
+
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -9,7 +10,7 @@ def convert_dates_to_datetimes(data: dict) -> dict:
         if isinstance(value, dict):
             convert_dates_to_datetimes(value)
         elif isinstance(value, date) and not isinstance(value, datetime):
-            data[key] = datetime.combine(value, datetime.min.time(), tzinfo=timezone.utc)
+            data[key] = datetime.combine(value, datetime.min.time(), tzinfo=UTC)
     return data
 
 
@@ -28,7 +29,7 @@ class UserModel:
 
     async def create_user(self, user_data: dict) -> dict:
         user_data["email"] = user_data["email"].lower().strip()
-        user_data["created_at"] = datetime.now(timezone.utc)
+        user_data["created_at"] = datetime.now(UTC)
         user_data["is_active"] = True
 
         # Convert nested dates (e.g. expected_due_date) to BSON-compatible datetime
@@ -41,7 +42,6 @@ class UserModel:
     async def update_mother_profile(self, user_id: str, profile_data: dict) -> bool:
         profile_data = convert_dates_to_datetimes(profile_data)
         res = await self.collection.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {"mother_profile": profile_data}}
+            {"_id": ObjectId(user_id)}, {"$set": {"mother_profile": profile_data}}
         )
         return res.modified_count > 0

@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ResponseStatusEnums(Enum):
     FILE_TYPE_NOT_SUPPORTED = "File type is not supported."
     FILE_SIZE_EXCEEDED = "File size exceeds the maximum allowed size."

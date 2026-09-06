@@ -1,19 +1,27 @@
-from fastapi import APIRouter, UploadFile, Request, status
-from models.enums.ResponceStatusEnum import ResponseStatusEnums
-from models.enums.DocumentStatusEnum import DocumentStatusEnums
-from models.enums.LLMEnums import DocumentTypeEnum
-from db.document_model import DocumentModel
-from db.chunk_model import ChunkModel
-from models.api_responce import APIResponce
-from models.document import Document
-from models.data_chunk import DataChunk
-from services.data_service import DocumentParserService
-from bson import ObjectId
 import logging
-import aiofiles
-from core.config import get_settings
 import os
 from pathlib import Path
+
+import aiofiles
+from bson import ObjectId
+from fastapi import APIRouter, Depends, Request, UploadFile, status
+
+from core.config import get_settings
+from db.chunk_model import ChunkModel
+from db.document_model import DocumentModel
+from models.api_responce import APIResponce
+from models.data_chunk import DataChunk
+from models.document import Document
+from models.enums.DocumentStatusEnum import DocumentStatusEnums
+from models.enums.ResponceStatusEnum import ResponseStatusEnums
+from services.data_service import DocumentParserService
+
+try:
+    from core.auth import get_current_user
+except ImportError:
+
+    def get_current_user():
+        return {}
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +30,9 @@ settings = get_settings()
 
 
 @data.post("/upload")
-async def upload_file(request: Request, file: UploadFile) -> APIResponce:
+async def upload_file(
+    request: Request, file: UploadFile, current_user: dict = Depends(get_current_user)
+) -> APIResponce:
     db_client = request.app.state.db_client
     document_model = await DocumentModel.get_instance(db_client)
 

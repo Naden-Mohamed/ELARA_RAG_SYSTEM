@@ -1,10 +1,12 @@
-from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import VectorParams, PointStruct, Distance, models
-from qdrant_client.http.exceptions import UnexpectedResponse
 import logging
-from enum import Enum
-from core.config import get_settings
 import uuid
+from enum import Enum
+
+from qdrant_client import AsyncQdrantClient
+from qdrant_client.http.exceptions import UnexpectedResponse
+from qdrant_client.models import PointStruct, models
+
+from core.config import get_settings
 
 
 class DistanceMetric(Enum):
@@ -224,8 +226,7 @@ class Qdrant:
                     vector={
                         self.dense_vector_name: batch_vectors[x],
                         self.sparse_vector_name: models.Document(
-                            text= batch_texts[x],
-                            model = "Qdrant/bm25"
+                            text=batch_texts[x], model="Qdrant/bm25"
                         ),
                     },
                     payload={"text": batch_texts[x], **(batch_metadatas[x] or {})},
@@ -251,8 +252,8 @@ class Qdrant:
     async def search_by_vector(
         self,
         collection_name: str,
+        query: str,
         dense_vector: list,
-        sparse_vector: list,
         top_k: int = 5,
     ):
         if not self.client:
@@ -274,13 +275,16 @@ class Qdrant:
                         limit=10,
                     ),
                     models.Prefetch(
-                        query=sparse_vector,
-                        using="sparse",
+                        query=models.Document(
+                            text=query,
+                            model="Qdrant/bm25",
+                        ),
+                        using=self.sparse_vector_name,
                         limit=10,
                     ),
                 ],
                 query=models.FusionQuery(fusion=models.Fusion.RRF),
-                limit=5,
+                limit=top_k,
             )
 
             self.logger.info(f"Search in '{collection_name}' completed successfully.")
@@ -316,9 +320,9 @@ class Qdrant:
                     ),
                     models.Prefetch(
                         query=models.Document(
-                        text=query,
-                        model="Qdrant/bm25",
-                    ),
+                            text=query,
+                            model="Qdrant/bm25",
+                        ),
                         using=self.sparse_vector_name,
                         limit=prefetch_limit,
                     ),
@@ -329,7 +333,7 @@ class Qdrant:
             )
             self.logger.info(f"Search in '{collection_name}' completed successfully.")
             return results.points
-        
+
         except UnexpectedResponse as e:
             self.logger.error(f"Failed to search in '{collection_name}': {e}")
             return None

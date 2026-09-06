@@ -9,8 +9,9 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from services.embedding import EmbeddingService
 from models.enums.LLMEnums import DocumentTypeEnum
+from services.embedding import EmbeddingService
+
 
 def _mock_sentence_transformer(dim: int):
     mock_model = MagicMock()
@@ -20,17 +21,24 @@ def _mock_sentence_transformer(dim: int):
     )
     return mock_model
 
+
 class TestEmbeddingDimensionValidation:
-    
     def test_actual_model_dimension_is_used(self):
         service = EmbeddingService()
-        with patch("services.embedding.SentenceTransformer", return_value=_mock_sentence_transformer(384)):
-            service.set_embedding_model(model_id="some/minilm-model", embedding_size=1024)
+        with patch(
+            "services.embedding.SentenceTransformer",
+            return_value=_mock_sentence_transformer(384),
+        ):
+            service.set_embedding_model(
+                model_id="some/minilm-model", embedding_size=1024
+            )
         assert service.embedding_size == 384  # not the wrong configured 1024
 
     def test_model_load_failure_leaves_client_none(self):
         service = EmbeddingService()
-        with patch("services.embedding.SentenceTransformer", side_effect=RuntimeError("boom")):
+        with patch(
+            "services.embedding.SentenceTransformer", side_effect=RuntimeError("boom")
+        ):
             service.set_embedding_model(model_id="broken/model", embedding_size=384)
         assert service.client is None
         assert service.embed_text("hello") is None
@@ -43,11 +51,17 @@ class TestInstructionPrefixing:
         service = EmbeddingService()
         mock_model = _mock_sentence_transformer(1024)
         with patch("services.embedding.SentenceTransformer", return_value=mock_model):
-            service.set_embedding_model(model_id="BAAI/bge-base-en", embedding_size=1024)
+            service.set_embedding_model(
+                model_id="BAAI/bge-base-en", embedding_size=1024
+            )
 
-        service.embed_text("pregnancy symptoms", document_type=DocumentTypeEnum.QUERY.value)
+        service.embed_text(
+            "pregnancy symptoms", document_type=DocumentTypeEnum.QUERY.value
+        )
         called_texts = mock_model.encode.call_args.args[0]
-        assert called_texts[0].startswith("Represent this query for searching relevant passages:")
+        assert called_texts[0].startswith(
+            "Represent this query for searching relevant passages:"
+        )
 
     def test_non_bge_model_gets_no_instruction_prefix(self):
         service = EmbeddingService()
@@ -58,7 +72,9 @@ class TestInstructionPrefixing:
                 embedding_size=384,
             )
 
-        service.embed_text("pregnancy symptoms", document_type=DocumentTypeEnum.QUERY.value)
+        service.embed_text(
+            "pregnancy symptoms", document_type=DocumentTypeEnum.QUERY.value
+        )
         called_texts = mock_model.encode.call_args.args[0]
         assert called_texts[0] == "pregnancy symptoms"  # no prefix added
 
