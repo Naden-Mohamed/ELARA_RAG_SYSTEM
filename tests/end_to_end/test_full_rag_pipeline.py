@@ -14,18 +14,16 @@ import uuid
 import httpx
 import pytest
 
-pytestmark = pytest.mark.e2e
-
 RUN_E2E = os.environ.get("RUN_E2E_TESTS") == "1"
 BASE_URL = os.environ.get("E2E_BASE_URL", "http://localhost:8000")
 
-pytestmark = [
-    pytest.mark.e2e,
-    pytest.mark.skipif(
-        not RUN_E2E,
-        reason="Set RUN_E2E_TESTS=1 to run true e2e tests against live services.",
-    ),
-]
+# pytestmark = [
+#     pytest.mark.e2e,
+#     pytest.mark.skipif(
+#         not RUN_E2E,
+#         reason="Set RUN_E2E_TESTS=1 to run true e2e tests against live services.",
+#     ),
+# ]
 
 
 def _make_pdf_bytes(text_marker: str) -> bytes:

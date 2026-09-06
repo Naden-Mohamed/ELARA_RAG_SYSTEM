@@ -53,13 +53,9 @@ def is_relevant(point: dict[str, Any], case: dict[str, Any]) -> bool:
     # Page offset check (+/- 2 pages tolerance)
     target_page = case.get("target_page")
     retrieved_pages = get_pages(payload)
-    if target_page is not None and retrieved_pages:
-        if any(
-            abs(p - target_page) <= 2 for p in retrieved_pages if isinstance(p, int)
-        ):
-            return True
-
-    return False
+    if target_page is None or not retrieved_pages:
+        return False
+    return any(abs(p - target_page) <= 2 for p in retrieved_pages if isinstance(p, int))
 
 
 # ============================================================

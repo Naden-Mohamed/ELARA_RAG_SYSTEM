@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse
 
 from core.config import get_settings
@@ -17,6 +17,7 @@ from models.enums.DataBaseEnum import DataBaseEnums
 from models.enums.DocumentStatusEnum import DocumentStatusEnums
 from models.enums.LLMEnums import DocumentTypeEnum
 from models.enums.ResponceStatusEnum import ResponseStatusEnums
+from routers.auth_router import get_current_user
 from routers.schemas.data_requests import PushRequest, SearchRequest
 from routers.schemas.rag_requests import (
     DirectPromptTestRequest,
@@ -26,10 +27,15 @@ from routers.schemas.rag_requests import (
 logger = logging.getLogger(__name__)
 rag = APIRouter(tags=["api/rag"], prefix="/rag")
 settings = get_settings()
+current_user_dependency = Depends(get_current_user)
 
 
 @rag.post("/push")
-async def index_push(request: Request, push_request: PushRequest):
+async def index_push(
+    request: Request,
+    push_request: PushRequest,
+    user_id: dict = current_user_dependency,
+):
     try:
         db_client = request.app.state.db_client
         vectordb = request.app.state.vectordb
@@ -50,10 +56,7 @@ async def index_push(request: Request, push_request: PushRequest):
                 error="No chunks found. Please run /data/ingest first.",
             )
 
-        texts = [
-            c.chunk_text if hasattr(c, "chunk_text") else c.chunk_text
-            for c in file_chunks
-        ]
+        texts = [c.chunk_text for c in file_chunks]
 
         batch_size = 32
         all_embeddings = []
@@ -81,11 +84,7 @@ async def index_push(request: Request, push_request: PushRequest):
 
         metadatas = [
             {
-                **(
-                    c.chunk_metadata
-                    if hasattr(c, "chunk_metadata")
-                    else c.chunk_metadata
-                ),
+                **(c.chunk_metadata),
                 "document_id": str(push_request.document_id),
                 "doc_name": doc.doc_name
                 if doc and hasattr(doc, "doc_name")
@@ -139,7 +138,6 @@ async def get_index_info(request: Request, document_id: str):
     vectordb = request.app.state.vectordb
 
     document_model = await DocumentModel.get_instance(db_client)
-    doc = await document_model.get_document_by_id(document_id)
     info = await vectordb.get_collection_info(DataBaseEnums.DOCUMENTS_COLLECTION.value)
 
     if not info:

@@ -2,8 +2,6 @@ import io
 
 import pytest
 
-pytestmark = pytest.mark.integration
-
 
 def _pdf_bytes() -> bytes:
     pypdf = pytest.importorskip("pypdf")
@@ -16,7 +14,7 @@ def _pdf_bytes() -> bytes:
 
 def _patch_upload_dir(monkeypatch, tmp_path):
 
-    import services.data_service as data_service_module
+    import src.services.data_service as data_service_module
 
     original_init = data_service_module.DocumentParserService.__init__
 

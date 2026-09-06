@@ -298,9 +298,9 @@ async def app(
     Also monkeypatches the module-level llm_service globals used by the
     routers today (see routers/chat_router.py and routers/rag_router.py).
     """
-    import main as main_module
-    from routers import chat_router as chat_router_module
-    from routers import rag_router as rag_router_module
+    import src.main as main_module
+    from src.routers import chat_router as chat_router_module
+    from src.routers import rag_router as rag_router_module
 
     monkeypatch.setattr(
         chat_router_module, "llm_service", fake_llm_service, raising=False

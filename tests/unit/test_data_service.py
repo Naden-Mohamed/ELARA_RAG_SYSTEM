@@ -4,11 +4,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from services.data_service import DocumentParserService
+from src.services.data_service import DocumentParserService
 
 
 @pytest.fixture

@@ -1,7 +1,5 @@
 import pytest
 
-pytestmark = pytest.mark.integration
-
 
 class TestSendMessage:
     @pytest.mark.asyncio

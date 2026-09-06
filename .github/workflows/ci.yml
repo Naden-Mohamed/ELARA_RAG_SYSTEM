@@ -1,0 +1,65 @@
+name: Elara-CI-Pipeline
+
+on:
+  push:
+    branches: [backend, master]
+    paths:
+    - 'src/**'
+    - 'pyproject.toml'
+    - 'tests/**'
+    - '.github/workflows/**'
+
+  pull_request:
+    branches: [backend, master]
+
+jobs:
+  pre-commit_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.3"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Install pre-commit
+        run: pre-commit install
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files
+
+  testing:
+    needs: pre-commit_checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.3"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run tests
+        run: pytest --junitxml=reports/test-results.xml --cov=src/

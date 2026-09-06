@@ -1,12 +1,9 @@
 from datetime import datetime
-from typing import Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
-T = TypeVar("T")
 
-
-class APIResponce(BaseModel, Generic[T]):
+class APIResponce[T](BaseModel):
     status_code: int
     status: str
     data: T | None = None

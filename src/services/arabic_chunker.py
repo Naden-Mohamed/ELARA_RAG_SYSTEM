@@ -125,7 +125,7 @@ class ArabicPdfChunker:
                         "text": chunk_text,
                         "metadata": {
                             "chunk_order": order,
-                            "page_numbers": sorted(list(set([start_page, end_page]))),
+                            "page_numbers": sorted({start_page, end_page}),
                             "language": "ar",
                         },
                     }

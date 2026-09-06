@@ -5,19 +5,24 @@ import asyncio
 import os
 import sys
 
-# Ensure src is in python path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)
+# Ensure project src is in python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(project_root, "src"))
+sys.path.insert(0, project_root)
 
-from routers.schemas.rag_requests import LanguageEnum, MockChunkInput, UserPersonaEnum
-from services.llm_service import LLMService
+from src.routers.schemas.rag_requests import (
+    LanguageEnum,
+    MockChunkInput,
+    UserPersonaEnum,
+)
+from src.services.llm_service import LLMService
 
 MOCK_CHUNKS = [
     MockChunkInput(
         chunk_id="chunk_01",
         doc_name="WHO_MNH_Care_2025.pdf",
         page_number=4,
+        score=1.0,
         section="Recommendation 1. Birth Preparedness",
         text="A Birth Preparedness and Complication Readiness (BPCR) plan includes: desired birth location, identifying emergency transport, saving funds, and selecting a continuous birth companion.",
     ),
@@ -25,6 +30,7 @@ MOCK_CHUNKS = [
         chunk_id="chunk_02",
         doc_name="WHO_MNH_Care_2025.pdf",
         page_number=8,
+        score=1.0,
         section="Recommendation 8. Labour Companionship",
         text="Continuous companionship during labour improves clinical outcomes and maternal satisfaction. Companions provide emotional and practical support.",
     ),

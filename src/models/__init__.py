@@ -1,3 +1,3 @@
-from models.enums.DataBaseEnum import DataBaseEnums
-from models.enums.DocumentStatusEnum import DocumentStatusEnums
-from models.enums.ResponceStatusEnum import ResponseStatusEnums
+from models.enums.DataBaseEnum import DataBaseEnums as DataBaseEnums
+from models.enums.DocumentStatusEnum import DocumentStatusEnums as DocumentStatusEnums
+from models.enums.ResponceStatusEnum import ResponseStatusEnums as ResponseStatusEnums

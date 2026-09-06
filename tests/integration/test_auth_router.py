@@ -1,7 +1,5 @@
 import pytest
 
-pytestmark = pytest.mark.integration
-
 
 class TestRegister:
     @pytest.mark.asyncio

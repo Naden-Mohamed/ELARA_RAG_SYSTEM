@@ -2,13 +2,9 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
-import pytest
-
-pytestmark = pytest.mark.unit
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from core.security import (
+from src.core.security import (
     create_access_token,
     decode_access_token,
     get_password_hash,

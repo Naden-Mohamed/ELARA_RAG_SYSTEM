@@ -2,15 +2,12 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-pytestmark = pytest.mark.unit
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from models.enums.LLMEnums import DocumentTypeEnum
-from services.embedding import EmbeddingService
+from src.models.enums.LLMEnums import DocumentTypeEnum
+from src.services.embedding import EmbeddingService
 
 
 def _mock_sentence_transformer(dim: int):

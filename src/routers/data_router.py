@@ -4,7 +4,7 @@ from pathlib import Path
 
 import aiofiles
 from bson import ObjectId
-from fastapi import APIRouter, Depends, Request, UploadFile, status
+from fastapi import APIRouter, Request, UploadFile, status
 
 from core.config import get_settings
 from db.chunk_model import ChunkModel
@@ -16,23 +16,13 @@ from models.enums.DocumentStatusEnum import DocumentStatusEnums
 from models.enums.ResponceStatusEnum import ResponseStatusEnums
 from services.data_service import DocumentParserService
 
-try:
-    from core.auth import get_current_user
-except ImportError:
-
-    def get_current_user():
-        return {}
-
-
 logger = logging.getLogger(__name__)
 data = APIRouter(tags=["api/data"], prefix="/data")
 settings = get_settings()
 
 
 @data.post("/upload")
-async def upload_file(
-    request: Request, file: UploadFile, current_user: dict = Depends(get_current_user)
-) -> APIResponce:
+async def upload_file(request: Request, file: UploadFile) -> APIResponce:
     db_client = request.app.state.db_client
     document_model = await DocumentModel.get_instance(db_client)
 
@@ -58,9 +48,8 @@ async def upload_file(
                 if not chunk:
                     break
                 await out_file.write(chunk)
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to write uploaded file to disk")
-        raise e
 
     try:
         doc = Document(
