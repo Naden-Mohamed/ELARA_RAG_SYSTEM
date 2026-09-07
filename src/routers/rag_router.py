@@ -10,6 +10,7 @@ from core.safety_gate import (
     pre_generation_gate,
     validate_grounded_response,
 )
+from core.structured_logging import get_correlation_id
 from db.chunk_model import ChunkModel
 from db.document_model import DocumentModel
 from models.api_responce import APIResponce
@@ -107,6 +108,7 @@ async def index_push(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
                 error="Failed to store vectors in Qdrant",
+                trace_id=get_correlation_id(),
             )
         await document_model.update_status(
             doc_id=push_request.document_id,
@@ -121,6 +123,7 @@ async def index_push(
                 "document_id": push_request.document_id,
                 "chunk_count": len(file_chunks),
             },
+            trace_id=get_correlation_id(),
         )
 
     except Exception as e:
@@ -150,6 +153,7 @@ async def get_index_info(request: Request, document_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status=ResponseStatusEnums.INSERT_INTO_VECTORDB_ERROR.value,
             error="Failed to get_collection_info",
+            trace_id=get_correlation_id(),
         )
 
     await document_model.update_status(
@@ -161,6 +165,7 @@ async def get_index_info(request: Request, document_id: str):
         status_code=status.HTTP_200_OK,
         status=ResponseStatusEnums.FILE_PROCESSED_SUCCESSFULLY.value,
         data={"document_id": document_id, "index_info": info},
+        trace_id=get_correlation_id(),
     )
 
 
@@ -210,12 +215,14 @@ async def search_by_vector(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
             error="Vector database search failed",
+            trace_id=get_correlation_id(),
         )
 
     return APIResponce(
         status_code=status.HTTP_200_OK,
         status=ResponseStatusEnums.VECTORDB_SEARCH_SUCCESS.value,
         data={"search_results": results},
+        trace_id=get_correlation_id(),
     )
 
 
