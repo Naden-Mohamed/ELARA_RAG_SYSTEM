@@ -35,7 +35,7 @@ class LLMService:
     ) -> str:
         base = BASE_RULES_AR if language == LanguageEnum.AR else BASE_RULES_EN
         persona_rule = PERSONA_RULES.get(
-            (persona, language), PERSONA_RULES[(UserPersonaEnum.GENERAL, language)]
+            (persona, language), PERSONA_RULES[(UserPersonaEnum.MOTHER, language)]
         )
         return f"{base}{persona_rule}"
 

@@ -72,10 +72,6 @@ PERSONA_RULES = {
         "  * أجب بدقة ومباشرة على 'آخر رسالة فقط' أرسلها المستخدم.\n"
         "  * لا تكرر النصائح والتحذيرات التي ذكرتها بالفعل في الرسائل السابقة، بل ابنِ عليها وقدم خطوات عملية جديدة تناسب استفسار المستخدم الحالي وموقفه."
     ),
-    (
-        UserPersonaEnum.GENERAL,
-        LanguageEnum.AR,
-    ): "\nالجمهور المستهدف: عام.\n- قدم إجابة مباشرة وموثقة بلغة واضحة وموضوعية.",
     (UserPersonaEnum.DOCTOR, LanguageEnum.EN): (
         "\nTARGET AUDIENCE: DOCTOR / CLINICIAN\n"
         "- Tone: Highly clinical, formal, concise, and evidence-driven.\n"
@@ -93,10 +89,6 @@ PERSONA_RULES = {
         "- Proactive Clarification Protocol: If critical context is missing from the mother's query, address the available part using documents first, then politely ask one targeted clarifying question.\n"
         "- Multi-Turn Management: Answer strictly the latest message and build upon previous context without redundant warnings."
     ),
-    (
-        UserPersonaEnum.GENERAL,
-        LanguageEnum.EN,
-    ): "\nTARGET AUDIENCE: GENERAL.\n- Provide an objective, grounded answer with clear citations.",
 }
 
 # -------------------------------------------------------------

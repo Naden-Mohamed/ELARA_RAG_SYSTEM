@@ -6,7 +6,6 @@ from pydantic import BaseModel
 class UserPersonaEnum(str, Enum):
     DOCTOR = "doctor"
     MOTHER = "mother"
-    GENERAL = "general"
 
 
 class LanguageEnum(str, Enum):
@@ -25,16 +24,9 @@ class MockChunkInput(BaseModel):
 
 class QueryRequest(BaseModel):
     query: str
-    persona: UserPersonaEnum = UserPersonaEnum.GENERAL
+    persona: UserPersonaEnum = UserPersonaEnum.MOTHER
     language: LanguageEnum = LanguageEnum.EN
     top_k: int = 5
-
-
-class DirectPromptTestRequest(BaseModel):
-    query: str
-    persona: UserPersonaEnum = UserPersonaEnum.GENERAL
-    language: LanguageEnum = LanguageEnum.EN
-    context_chunks: list[MockChunkInput] = []
 
 
 class RetrievedChunkDTO(BaseModel):

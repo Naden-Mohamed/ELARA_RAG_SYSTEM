@@ -332,7 +332,7 @@ class Qdrant:
                 with_payload=True,
             )
             self.logger.info(f"Search in '{collection_name}' completed successfully.")
-            return results.points
+            return results
 
         except UnexpectedResponse as e:
             self.logger.error(f"Failed to search in '{collection_name}': {e}")

@@ -28,11 +28,6 @@ RESULTS_DIR = Path(__file__).resolve().parent / "results"
 TOP_K_VALUES = [1, 3, 5, 10]
 
 
-# ============================================================
-# RETRIEVAL GROUND TRUTH
-# ============================================================
-
-
 def is_relevant(point: dict[str, Any], case: dict[str, Any]) -> bool:
     """Evaluates chunk relevance based on expected case status."""
     expected_status = case.get("expected_status", "answered")
@@ -58,11 +53,6 @@ def is_relevant(point: dict[str, Any], case: dict[str, Any]) -> bool:
     return any(abs(p - target_page) <= 2 for p in retrieved_pages if isinstance(p, int))
 
 
-# ============================================================
-# API
-# ============================================================
-
-
 def search(query: str, limit: int) -> tuple[list[dict[str, Any]], float]:
     start = time.perf_counter()
     response = requests.post(
@@ -85,11 +75,6 @@ def search(query: str, limit: int) -> tuple[list[dict[str, Any]], float]:
         points = []
 
     return points, latency
-
-
-# ============================================================
-# METRICS
-# ============================================================
 
 
 def calculate_metrics(
@@ -127,11 +112,6 @@ def calculate_metrics(
             "hit_at_k": 0.0,
             "mrr_at_k": 0.0,
         }
-
-
-# ============================================================
-# CASE EVALUATION
-# ============================================================
 
 
 def evaluate_case(case: dict[str, Any], k: int) -> dict[str, Any]:
@@ -194,11 +174,6 @@ def evaluate_case(case: dict[str, Any], k: int) -> dict[str, Any]:
     }
 
 
-# ============================================================
-# RUN EVALUATION
-# ============================================================
-
-
 def run_evaluation() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     cases = load_evaluation_cases(DATASET_PATH)
@@ -218,7 +193,7 @@ def run_evaluation() -> None:
             rows.append(row)
 
     dataframe = pd.DataFrame(rows)
-    metrics_path = RESULTS_DIR / "all_retrieval_cases.csv"
+    metrics_path = RESULTS_DIR / "final_retrieval_cases.csv"
     dataframe.to_csv(metrics_path, index=False)
 
     # Detailed summary broken down by top_k and category
@@ -235,7 +210,7 @@ def run_evaluation() -> None:
         .reset_index()
     )
 
-    summary_path = RESULTS_DIR / "all_retrieval_summary.csv"
+    summary_path = RESULTS_DIR / "final_retrieval_summary.csv"
     summary.to_csv(summary_path, index=False)
 
     print("\nRetrieval Evaluation Complete")

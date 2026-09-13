@@ -21,8 +21,8 @@ from models.enums.ResponceStatusEnum import ResponseStatusEnums
 from routers.auth_router import get_current_user
 from routers.schemas.data_requests import PushRequest, SearchRequest
 from routers.schemas.rag_requests import (
-    DirectPromptTestRequest,
     MockChunkInput,
+    QueryRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -226,8 +226,8 @@ async def search_by_vector(
     )
 
 
-@rag.post("/test-prompt", response_model=APIResponce)
-async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRequest):
+@rag.post("/rag_answer", response_model=APIResponce)
+async def rag_answer(request: Request, payload: QueryRequest):
     llm_service = request.app.state.llm_service
 
     risk = classify_input_risk(payload.query)
@@ -249,119 +249,127 @@ async def test_llm_prompt_endpoint(request: Request, payload: DirectPromptTestRe
         )
 
     try:
-        chunks_to_use = payload.context_chunks
+        vectordb = request.app.state.vectordb
+        embedding_service = request.app.state.embedding_service
 
-        if not chunks_to_use:
-            vectordb = request.app.state.vectordb
-            embedding_service = request.app.state.embedding_service
-            query_embeddings = embedding_service.embed_text(
-                payload.query, document_type=DocumentTypeEnum.QUERY.value
+        query_embeddings = embedding_service.embed_text(
+            payload.query, document_type=DocumentTypeEnum.QUERY.value
+        )
+
+        if query_embeddings is None or len(query_embeddings) == 0:
+            return APIResponce(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=ResponseStatusEnums.VECTORDB_SEARCH_ERROR.value,
+                error="Query embedding generation failed",
             )
 
-            search_results = await vectordb.search_by_vector(
-                DataBaseEnums.DOCUMENTS_COLLECTION.value, query_embeddings[0], 5
-            )
+        search_results = await vectordb.hybrid_search(
+            collection_name=DataBaseEnums.DOCUMENTS_COLLECTION.value,
+            query=payload.query,
+            dense_vector=query_embeddings[0],
+            top_k=payload.top_k,
+            prefetch_limit=10,
+        )
 
-            if search_results and hasattr(search_results, "points"):
-                chunks_to_use = []
-                for res in search_results.points:
-                    p_load = res.payload or {}
-                    page_nums = p_load["page_numbers"]
-                    page_num = (
-                        page_nums[0] if isinstance(page_nums, list) and page_nums else 1
-                    )
-                    sections = p_load["section_headings"]
-                    section_title = (
-                        sections[0]
-                        if isinstance(sections, list) and sections
-                        else "General Recommendations"
-                    )
-
-                    chunks_to_use.append(
-                        MockChunkInput(
-                            chunk_id=str(res.id),
-                            doc_name=p_load["original_filename"],
-                            page_number=page_num,
-                            section=section_title,
-                            text=p_load["text"],
-                            score=res.score or 0.0,
-                        )
-                    )
-            else:
-                return APIResponce(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
-                    error="No relevant chunks",
+        if search_results:
+            chunks_to_use = []
+            for res in search_results.points:
+                p_load = res.payload or {}
+                page_nums = p_load["page_numbers"]
+                page_num = (
+                    page_nums[0] if isinstance(page_nums, list) and page_nums else 1
+                )
+                sections = p_load["section_headings"]
+                section_title = (
+                    sections[0]
+                    if isinstance(sections, list) and sections
+                    else "General Recommendations"
                 )
 
-        gate_result = pre_generation_gate(payload.query, chunks_to_use)
-        if not gate_result["allow"]:
+                chunks_to_use.append(
+                    MockChunkInput(
+                        chunk_id=str(res.id),
+                        doc_name=p_load["original_filename"],
+                        page_number=page_num,
+                        section=section_title,
+                        text=p_load["text"],
+                        score=res.score or 0.0,
+                    )
+                )
+        else:
             return APIResponce(
-                status_code=status.HTTP_200_OK,
-                status="refused",
-                data={
-                    "query": payload.query,
-                    "persona": payload.persona.value,
-                    "language": payload.language.value,
-                    "answer": build_safe_fallback_message(payload.language),
-                    "latency_seconds": 0.0,
-                    "citations": chunks_to_use,
-                    "gate_reason": gate_result["reason"],
-                    "top_score": gate_result["top_score"],
-                },
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=ResponseStatusEnums.RAG_ANSWER_ERROR.value,
+                error="No relevant chunks",
             )
-
-        answer, latency, citations = await llm_service.generate_rag_response(
-            query=payload.query,
-            chunks=chunks_to_use,
-            persona=payload.persona,
-            language=payload.language,
-        )
-        print("citations", citations)
-
-        validation = validate_grounded_response(
-            answer,
-            citations,
-            chunks_to_use,
-        )
-
-        if not validation["valid"]:
-            return APIResponce(
-                status_code=status.HTTP_200_OK,
-                status="refused",
-                data={
-                    "query": payload.query,
-                    "persona": payload.persona.value,
-                    "language": payload.language.value,
-                    "answer": build_safe_fallback_message(payload.language),
-                    "latency_seconds": latency,
-                    "citations": [],
-                    "is_refusal": True,
-                    "validation_reason": validation["reason"],
-                },
-            )
-
-        return APIResponce(
-            status_code=status.HTTP_200_OK,
-            status="success",
-            data={
-                "query": payload.query,
-                "persona": payload.persona.value,
-                "language": payload.language.value,
-                "answer": answer,
-                "top_similarity_score": gate_result["top_score"],
-                "latency_seconds": latency,
-                "citations": citations,
-                "is_refusal": validation["is_refusal"],
-                "validation_reason": validation["reason"],
-            },
-        )
     except Exception as e:
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status="failed",
             error=str(e),
         )
+    gate_result = pre_generation_gate(payload.query, chunks_to_use)
+    if not gate_result["allow"]:
+        return APIResponce(
+            status_code=status.HTTP_200_OK,
+            status="refused",
+            data={
+                "query": payload.query,
+                "persona": payload.persona.value,
+                "language": payload.language.value,
+                "answer": build_safe_fallback_message(payload.language),
+                "latency_seconds": 0.0,
+                "citations": chunks_to_use,
+                "gate_reason": gate_result["reason"],
+                "top_score": gate_result["top_score"],
+            },
+        )
+
+    answer, latency, citations = await llm_service.generate_rag_response(
+        query=payload.query,
+        chunks=chunks_to_use,
+        persona=payload.persona,
+        language=payload.language,
+    )
+    print("citations", citations)
+
+    validation = validate_grounded_response(
+        answer,
+        citations,
+        chunks_to_use,
+    )
+
+    if not validation["valid"]:
+        return APIResponce(
+            status_code=status.HTTP_200_OK,
+            status="refused",
+            data={
+                "query": payload.query,
+                "persona": payload.persona.value,
+                "language": payload.language.value,
+                "answer": build_safe_fallback_message(payload.language),
+                "latency_seconds": latency,
+                "citations": [],
+                "is_refusal": True,
+                "validation_reason": validation["reason"],
+            },
+        )
+
+    return APIResponce(
+        status_code=status.HTTP_200_OK,
+        status="success",
+        data={
+            "query": payload.query,
+            "persona": payload.persona.value,
+            "language": payload.language.value,
+            "answer": answer,
+            "top_similarity_score": gate_result["top_score"],
+            "latency_seconds": latency,
+            "citations": citations,
+            "is_refusal": validation["is_refusal"],
+            "validation_reason": validation["reason"],
+        },
+    )
 
 
 # why local cooling, such as with ice packs or cold pads could be offered to woman?

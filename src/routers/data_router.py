@@ -252,7 +252,7 @@ async def ingest_file(request: Request, document_id: str) -> APIResponce:
     )
 
 
-@data.post("/delete_document_chunks")
+@data.delete("/delete_document_chunks")
 async def delete_document_chunks(request: Request, document_id: str) -> APIResponce:
     db_client = request.app.state.db_client
     chunk_model = await ChunkModel.get_instance(db_client=db_client)
