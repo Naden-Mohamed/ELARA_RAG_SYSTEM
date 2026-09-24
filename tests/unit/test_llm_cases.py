@@ -2,9 +2,11 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Loads .env from root directory before loading settings
 import asyncio
+import logging
 import os
 import sys
 
+logger = logging.getLogger(__name__)
 # Ensure project src is in python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(project_root, "src"))
@@ -77,27 +79,17 @@ TEST_CASES = [
 
 async def main():
     service = LLMService()
-    print("=" * 75)
-    print("           TESTING ELARA LLM SERVICE & CITATION GENERATOR")
-    print("=" * 75)
 
     for case in TEST_CASES:
-        print(f"\n>> RUNNING: {case['name']}")
-        print(f'Query: "{case["query"]}"')
-        print("-" * 75)
-
         answer, latency, citations = await service.generate_rag_response(
             query=case["query"],
             chunks=case["chunks"],
             persona=case["persona"],
             language=case["language"],
         )
-
-        print(f"Generated Output:\n{answer}\n")
-        print(f"Latency: {latency}s | Citations Detected: {len(citations)}")
-        for cit in citations:
-            print(f"   -> {cit}")
-        print("=" * 75)
+        logger.info(f"Generated Output:\n{answer}\n")
+        logger.info(f"Latency: {latency}s | Citations Detected: {len(citations)}")
+        logger.info(f"   -> {citations}")
 
 
 if __name__ == "__main__":

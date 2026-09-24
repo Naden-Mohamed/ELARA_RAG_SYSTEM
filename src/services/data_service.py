@@ -11,6 +11,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
 from docling_core.transforms.chunker.tokenizer.huggingface import HuggingFaceTokenizer
 from fastapi import UploadFile
+from pathvalidate import sanitize_filename
 from transformers import AutoTokenizer
 
 from core.config import get_settings
@@ -25,10 +26,12 @@ class DocumentParserService:
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.files_path = os.path.join(self.base_dir, "data")
 
-    def generate_unique_filename(self, original_filename: str | None, lenght: int = 5):
+    def generate_unique_filename(self, original_filename: str, lenght: int = 5):
+        filename = Path(original_filename).name
+        clean_name = sanitize_filename(filename)
         characters = string.ascii_letters + string.digits
         random_prefix = "".join(random.choices(characters, k=lenght))
-        return f"{random_prefix}_{original_filename}"
+        return f"{random_prefix}_{clean_name}"
 
     def validate_uploaded_file(self, file: UploadFile):
         if file.content_type not in self.settings.FILE_ALLOWED_TYPES:

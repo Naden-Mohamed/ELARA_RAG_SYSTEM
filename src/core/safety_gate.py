@@ -38,6 +38,7 @@ def matches_any(text: str, patterns: list[str]) -> bool:
 def pre_generation_gate(query: str, chunks: list[MockChunkInput]) -> dict:
     """Deterministic, pre-LLM safety gate. Runs before any Groq call is made.
 
+
     Returns:
         {"allow": bool, "reason": str}
     """

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -19,9 +21,8 @@ auth_router = APIRouter(tags=["Authentication"], prefix="/auth")
 security = HTTPBearer()
 
 
-# Dependency to get the current authenticated user
 async def get_current_user(
-    request: Request, creds: HTTPAuthorizationCredentials = Depends(security)
+    request: Request, creds: Annotated[HTTPAuthorizationCredentials, Depends(security)]
 ):
     payload = decode_access_token(creds.credentials)
     if not payload or "sub" not in payload:
@@ -34,12 +35,14 @@ async def get_current_user(
     return user
 
 
+current_user_dependency = Depends(get_current_user)
+
+
 @auth_router.post("/register", response_model=APIResponce)
 async def register(request: Request, payload: UserRegisterRequest):
     user_model = UserModel(request.app.state.db_client)
     await user_model.init_indexes()
 
-    # Check if user already exists
     existing_user = await user_model.get_by_email(payload.email)
     if existing_user:
         return APIResponce(
@@ -56,7 +59,6 @@ async def register(request: Request, payload: UserRegisterRequest):
     new_user = await user_model.create_user(user_dict)
     user_id_str = str(new_user["_id"])
 
-    # Generate JWT Token directly on register
     token = create_access_token(
         data={"sub": user_id_str, "persona": new_user["persona"]}
     )
@@ -79,10 +81,10 @@ async def login(request: Request, payload: UserLoginRequest):
     user = await user_model.get_by_email(payload.email)
 
     if not user or not verify_password(payload.password, user["hashed_password"]):
-        return APIResponce(
+        return HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            status="failed",
-            error="Invalid email or password.",
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
         )
 
     user_id_str = str(user["_id"])
@@ -96,12 +98,12 @@ async def login(request: Request, payload: UserLoginRequest):
             user_id=user_id_str,
             full_name=user["full_name"],
             persona=user["persona"],
-        ).dict(),
+        ),
     )
 
 
 @auth_router.get("/me", response_model=APIResponce)
-async def get_my_profile(current_user: dict = Depends(get_current_user)):
+async def get_my_profile(current_user: dict = current_user_dependency):
     """Returns the authenticated user data including clinical and mother profile."""
     current_user["_id"] = str(current_user["_id"])
     current_user.pop("hashed_password", None)

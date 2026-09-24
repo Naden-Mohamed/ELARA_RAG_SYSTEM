@@ -16,6 +16,7 @@ from routers.auth_router import get_current_user
 from routers.schemas.rag_requests import LanguageEnum, MockChunkInput, UserPersonaEnum
 
 chat_router = APIRouter(tags=["Chat & Memory"], prefix="/chat")
+_current_user_dependency = Depends(get_current_user)
 
 
 class SendMessageRequest(BaseModel):
@@ -78,7 +79,7 @@ async def _retrieve_chunks(
 async def send_chat_message(
     payload: SendMessageRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = _current_user_dependency,
 ):
     db = request.app.state.db_client
     llm_service = request.app.state.llm_service
@@ -131,7 +132,7 @@ async def send_chat_message(
 
 @chat_router.get("/my-chats", response_model=APIResponce)
 async def list_user_chats(
-    request: Request, current_user: dict = Depends(get_current_user)
+    request: Request, current_user: dict = _current_user_dependency
 ):
     db = request.app.state.db_client
     chat_model = ChatModel(db)
@@ -149,7 +150,7 @@ async def get_chat_history(
     page_size: int = Query(
         default=20, ge=1, le=100, description="Number of messages per request"
     ),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = _current_user_dependency,
 ):
     db = request.app.state.db_client
     chat_model = ChatModel(db)

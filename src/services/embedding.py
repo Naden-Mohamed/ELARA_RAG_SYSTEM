@@ -46,7 +46,6 @@ class EmbeddingService:
 
             self.logger.info(f"BGE model '{model_id}' loaded successfully.")
 
-            print(f"BGE model '{model_id}' loaded successfully.")
         except Exception as e:
             self.logger.error(f"Failed to load BGE model '{model_id}': {e}")
             self.client = None

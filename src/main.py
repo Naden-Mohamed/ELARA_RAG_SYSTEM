@@ -1,24 +1,32 @@
 from contextlib import asynccontextmanager
 from logging import getLogger
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from core.config import get_settings
 from db.qdrant_vectordb import Qdrant
 from routers import base_router, data_router, rag_router
 from routers.auth_router import auth_router
 from routers.chat_router import chat_router
+from routers.middleware import CorrelationIDMiddleware
 from services.embedding import EmbeddingService
 from services.llm_service import LLMService
 
 logger = getLogger(__name__)
 
+settings = get_settings()
+limiter = Limiter(key_func=get_remote_address, default_limits=["5/30seconds"])
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    settings = get_settings()
-
+    app.state.limiter = limiter
     app.state.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URI)
     app.state.db_client = app.state.mongo_conn[settings.MONGODB_DB_NAME]
     logger.info("Connected to MongoDB for Auth, Profile & Chat Storage")
@@ -45,7 +53,28 @@ async def lifespan(app: FastAPI):
     logger.info("Database connections closed.")
 
 
+def custom_rate_limiter_handler(request: Request, exc: Exception):
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded, please try again later"},
+    )
+
+
 app = FastAPI(lifespan=lifespan)
+# Instrumentator.instrument(app).expose(app)
+
+app.add_exception_handler(RateLimitExceeded, custom_rate_limiter_handler)
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(CorrelationIDMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(base_router.base)
 app.include_router(data_router.data)

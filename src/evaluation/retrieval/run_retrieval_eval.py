@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 from pathlib import Path
@@ -19,6 +20,7 @@ from evaluation.common import (
     normalize_text,
 )
 
+logger = logging.getLogger(__name__)
 API_URL = os.getenv(
     "ELARA_SEARCH_URL",
     "http://127.0.0.1:8000/rag/search",
@@ -181,14 +183,15 @@ def run_evaluation() -> None:
     if not cases:
         raise RuntimeError("No evaluation cases found.")
 
-    print(f"Dataset: {DATASET_PATH}")
-    print(f"Total evaluation cases loaded: {len(cases)}")
+    logger.debug(f"Total evaluation cases loaded: {len(cases)}")
 
     rows = []
     for k in TOP_K_VALUES:
-        print(f"\n{'=' * 70}\nEvaluating Retrieval @ K={k}\n{'=' * 70}")
+        logger.info(f"\n{'=' * 70}\nEvaluating Retrieval @ K={k}\n{'=' * 70}")
         for index, case in enumerate(cases, start=1):
-            print(f"[{index}/{len(cases)}] Case: {case['id']} ({case.get('category')})")
+            logger.info(
+                f"[{index}/{len(cases)}] Case: {case['id']} ({case.get('category')})"
+            )
             row = evaluate_case(case, k)
             rows.append(row)
 
@@ -213,10 +216,9 @@ def run_evaluation() -> None:
     summary_path = RESULTS_DIR / "final_retrieval_summary.csv"
     summary.to_csv(summary_path, index=False)
 
-    print("\nRetrieval Evaluation Complete")
-    print(summary.to_string(index=False))
-    print(f"\nCases output: {metrics_path}")
-    print(f"Summary output: {summary_path}")
+    logger.info(f"\nRetrieval Evaluation Complete {summary.to_string(index=False)}")
+    logger.info(f"\nCases output: {metrics_path}")
+    logger.info(f"Summary output: {summary_path}")
 
 
 if __name__ == "__main__":

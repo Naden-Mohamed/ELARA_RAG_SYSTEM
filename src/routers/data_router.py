@@ -4,7 +4,7 @@ from pathlib import Path
 
 import aiofiles
 from bson import ObjectId
-from fastapi import APIRouter, Request, UploadFile, status
+from fastapi import APIRouter, Depends, Request, UploadFile, status
 
 from core.config import get_settings
 from db.chunk_model import ChunkModel
@@ -14,67 +14,79 @@ from models.data_chunk import DataChunk
 from models.document import Document
 from models.enums.DocumentStatusEnum import DocumentStatusEnums
 from models.enums.ResponceStatusEnum import ResponseStatusEnums
+from routers.auth_router import get_current_user
 from services.data_service import DocumentParserService
 
 logger = logging.getLogger(__name__)
 data = APIRouter(tags=["api/data"], prefix="/data")
 settings = get_settings()
 
+_current_user_dependency = Depends(get_current_user)
+
 
 @data.post("/upload")
-async def upload_file(request: Request, file: UploadFile) -> APIResponce:
-    db_client = request.app.state.db_client
-    document_model = await DocumentModel.get_instance(db_client)
+async def upload_file(
+    request: Request, file: UploadFile, current_user: dict = _current_user_dependency
+) -> APIResponce:
+    if current_user:
+        db_client = request.app.state.db_client
+        document_model = await DocumentModel.get_instance(db_client)
 
-    data_service = DocumentParserService()
-    is_valid, result_signal = data_service.validate_uploaded_file(file=file)
+        data_service = DocumentParserService()
+        is_valid, result_signal = data_service.validate_uploaded_file(file=file)
 
-    if not is_valid:
+        if not is_valid:
+            return APIResponce(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                status=result_signal,
+                error="File validation failed",
+            )
+
+        unique_file_name = data_service.generate_unique_filename(
+            original_filename=file.filename if file.filename else "random"
+        )
+        file_path = os.path.join(data_service.files_path, unique_file_name)
+
+        try:
+            async with aiofiles.open(file_path, "wb") as out_file:
+                while True:
+                    chunk = await file.read(settings.FILE_DEFAULT_CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    await out_file.write(chunk)
+        except Exception:
+            logger.exception("Failed to write uploaded file to disk")
+
+        try:
+            doc = Document(
+                _id=ObjectId(),
+                doc_name=file.filename,
+                doc_path=file_path,
+                doc_type=file.content_type,
+                doc_metadata={},
+                doc_size=file.size,
+                status=DocumentStatusEnums.PENDING.value,
+            )
+            doc_id = await document_model.upload_document(doc=doc)
+        except Exception:
+            logger.exception("File upload DB insertion failed")
+            return APIResponce(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=ResponseStatusEnums.FILE_UPLOAD_FAILED.value,
+                error="File upload failed",
+            )
+
         return APIResponce(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            status=result_signal,
-            error="File validation failed",
+            status_code=status.HTTP_200_OK,
+            status=ResponseStatusEnums.FILE_UPLOADED_SUCCESSFULLY.value,
+            data={"document_id": str(doc_id)},
         )
-
-    unique_file_name = data_service.generate_unique_filename(
-        original_filename=file.filename
-    )
-    file_path = os.path.join(data_service.files_path, unique_file_name)
-
-    try:
-        async with aiofiles.open(file_path, "wb") as out_file:
-            while True:
-                chunk = await file.read(settings.FILE_DEFAULT_CHUNK_SIZE)
-                if not chunk:
-                    break
-                await out_file.write(chunk)
-    except Exception:
-        logger.exception("Failed to write uploaded file to disk")
-
-    try:
-        doc = Document(
-            _id=ObjectId(),
-            doc_name=file.filename,
-            doc_path=file_path,
-            doc_type=file.content_type,
-            doc_metadata={},
-            doc_size=file.size,
-            status=DocumentStatusEnums.PENDING.value,
-        )
-        doc_id = await document_model.upload_document(doc=doc)
-    except Exception:
-        logger.exception("File upload DB insertion failed")
+    else:
         return APIResponce(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status=ResponseStatusEnums.FILE_UPLOAD_FAILED.value,
-            error="File upload failed",
+            error="Unauthnticated user",
         )
-
-    return APIResponce(
-        status_code=status.HTTP_200_OK,
-        status=ResponseStatusEnums.FILE_UPLOADED_SUCCESSFULLY.value,
-        data={"document_id": str(doc_id)},
-    )
 
 
 @data.delete("/delete_document")

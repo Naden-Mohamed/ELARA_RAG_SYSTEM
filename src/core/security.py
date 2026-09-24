@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
+from fastapi import HTTPException
 
 from core.config import get_settings
 
@@ -28,7 +29,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     expire = datetime.now(UTC) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({"exp": expire})
+    to_encode.update({"iat": datetime.now(UTC), "exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -36,5 +37,7 @@ def decode_access_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except jwt.PyJWTError:
-        return None
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            401, "Invalid or expired token", headers={"WWW-Authenticate": "Bearer"}
+        )

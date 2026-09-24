@@ -96,7 +96,6 @@ class LLMService:
         system_prompt = self.build_system_prompt(persona, language)
         user_prompt = self.build_user_prompt(query, chunks, language)
 
-        print("user_prompt: ", user_prompt)
         start_time = time.time()
         messages: list[ChatCompletionMessageParam] = [
             cast(

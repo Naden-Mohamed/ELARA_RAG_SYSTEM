@@ -275,11 +275,11 @@ async def rag_answer(request: Request, payload: QueryRequest):
             chunks_to_use = []
             for res in search_results.points:
                 p_load = res.payload or {}
-                page_nums = p_load["page_numbers"]
+                page_nums = p_load.get("page_numbers")
                 page_num = (
                     page_nums[0] if isinstance(page_nums, list) and page_nums else 1
                 )
-                sections = p_load["section_headings"]
+                sections = p_load.get("section_headings")
                 section_title = (
                     sections[0]
                     if isinstance(sections, list) and sections
@@ -289,10 +289,10 @@ async def rag_answer(request: Request, payload: QueryRequest):
                 chunks_to_use.append(
                     MockChunkInput(
                         chunk_id=str(res.id),
-                        doc_name=p_load["original_filename"],
+                        doc_name=p_load.get("original_filename"),
                         page_number=page_num,
                         section=section_title,
-                        text=p_load["text"],
+                        text=p_load.get("text"),
                         score=res.score or 0.0,
                     )
                 )
@@ -320,8 +320,8 @@ async def rag_answer(request: Request, payload: QueryRequest):
                 "answer": build_safe_fallback_message(payload.language),
                 "latency_seconds": 0.0,
                 "citations": chunks_to_use,
-                "gate_reason": gate_result["reason"],
-                "top_score": gate_result["top_score"],
+                "gate_reason": gate_result.get("reason"),
+                "top_score": gate_result.get("top_score"),
             },
         )
 
@@ -331,7 +331,7 @@ async def rag_answer(request: Request, payload: QueryRequest):
         persona=payload.persona,
         language=payload.language,
     )
-    print("citations", citations)
+    logger.info(f"citations{citations}")
 
     validation = validate_grounded_response(
         answer,
@@ -351,7 +351,7 @@ async def rag_answer(request: Request, payload: QueryRequest):
                 "latency_seconds": latency,
                 "citations": [],
                 "is_refusal": True,
-                "validation_reason": validation["reason"],
+                "validation_reason": validation.get("reason"),
             },
         )
 
@@ -363,11 +363,11 @@ async def rag_answer(request: Request, payload: QueryRequest):
             "persona": payload.persona.value,
             "language": payload.language.value,
             "answer": answer,
-            "top_similarity_score": gate_result["top_score"],
+            "top_similarity_score": gate_result.get("top_score"),
             "latency_seconds": latency,
             "citations": citations,
-            "is_refusal": validation["is_refusal"],
-            "validation_reason": validation["reason"],
+            "is_refusal": validation.get("is_refusal"),
+            "validation_reason": validation.get("reason"),
         },
     )
 

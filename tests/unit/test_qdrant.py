@@ -1,8 +1,11 @@
 import asyncio
+import logging
 
 from qdrant_client import AsyncQdrantClient
 
 from src.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 async def main():
@@ -15,18 +18,13 @@ async def main():
         api_key=QDRANT_API_KEY,
         check_compatibility=False,
     )
-    print("QDRANT URL:", repr(QDRANT_URL))
-    print("API KEY EXISTS:", bool(QDRANT_API_KEY))
-    print(".env path:", settings.ENV_PATH)
+
     try:
         collections = await client.get_collections()
-        print("SUCCESS")
-        print(collections)
+        logger.info(f"existing collections {collections}")
 
     except Exception as e:
-        print("FAILED")
-        print(type(e).__name__)
-        print(str(e))
+        logger.debug(f"failed connecting to qdrant{e}")
 
     finally:
         await client.close()

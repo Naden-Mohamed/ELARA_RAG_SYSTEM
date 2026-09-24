@@ -1,9 +1,11 @@
 import asyncio
+import logging
 import os
 
 from dotenv import load_dotenv
 from groq import AsyncGroq
 
+logger = logging.getLogger(__name__)
 # Load API keys from root .env
 load_dotenv()
 
@@ -70,7 +72,7 @@ def construct_user_prompt(query: str, chunks: list[dict]) -> str:
 
 async def run_standalone_test():
     if not GROQ_API_KEY:
-        print("[!] Error: GROQ_API_KEY is not set in environment or .env file.")
+        ("[!] Error: GROQ_API_KEY is not set in environment or .env file.")
         return
 
     client = AsyncGroq(api_key=GROQ_API_KEY)
@@ -85,20 +87,13 @@ async def run_standalone_test():
             "query": "What should I prepare for my birth plan, and can my partner stay in the delivery room?",
         },
     ]
-
-    print("=" * 70)
-    print("      STANDALONE LLM GENERATION & CITATION TEST (MOCK DATA)")
-    print("=" * 70)
-
     for item in test_queries:
         persona = item["persona"]
         query = item["query"]
 
         system_prompt = build_system_prompt(persona)
         user_prompt = construct_user_prompt(query, MOCK_RETRIEVED_CHUNKS)
-
-        print(f"\n[+] Testing Query ({persona.upper()}): {query}")
-        print("-" * 70)
+        logger.info(f"\n[+] Testing Query ({persona.upper()}): {query}")
 
         try:
             response = await client.chat.completions.create(
@@ -112,12 +107,10 @@ async def run_standalone_test():
             )
 
             answer = response.choices[0].message.content
-            print("Generated Response:\n")
-            print(answer)
-            print("-" * 70)
+            logger.info(f"Generated Response:{answer}")
 
         except Exception as e:
-            print(f"[!] Groq API Call failed: {e}")
+            logger.error(f"[!] Groq API Call failed: {e}")
 
 
 if __name__ == "__main__":

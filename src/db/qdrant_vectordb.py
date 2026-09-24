@@ -136,7 +136,6 @@ class Qdrant:
                     )
                 },
             )
-            print(f"Collection '{collection_name}' created with size {embedding_size}.")
             self.logger.info(
                 f"Collection '{collection_name}' created with size {embedding_size}."
             )
@@ -203,7 +202,6 @@ class Qdrant:
             created = await self.create_collection(
                 collection_name, self.settings.BGE_EMBEDDING_MODEL_SIZE, do_reset=0
             )
-            print(f"Collection '{collection_name}' created")
             if not created:
                 return False
 
@@ -265,7 +263,6 @@ class Qdrant:
             return False
 
         try:
-            print("collection", collection_name)
             search_result = await self.client.query_points(
                 collection_name=collection_name,
                 prefetch=[
@@ -309,7 +306,6 @@ class Qdrant:
             raise RuntimeError(f"Collection '{collection_name}' doesn't exist")
 
         try:
-            print("collection", collection_name)
             results = await self.client.query_points(
                 collection_name=collection_name,
                 prefetch=[
