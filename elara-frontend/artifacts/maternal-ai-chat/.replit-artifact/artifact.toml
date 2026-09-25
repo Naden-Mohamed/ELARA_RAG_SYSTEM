@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Maternal AI Chat"
+description = "A bilingual maternal health assistant that answers from a curated evidence library, shows source citations, and includes transparent retrieval evaluation for hackathon demos and expert review."
+version = "1.0.0"
+id = "artifacts/maternal-ai-chat"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22630
+
+[services.development]
+run = "pnpm --filter @workspace/maternal-ai-chat run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/maternal-ai-chat", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/maternal-ai-chat/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22630"
+BASE_PATH = "/"
