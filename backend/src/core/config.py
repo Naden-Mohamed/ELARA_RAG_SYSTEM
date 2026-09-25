@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     CROSS_ENCODER_RERANKER: str = "BAAI/bge-reranker-base"
     # JWT Security
     JWT_SECRET_KEY: str = "super_secret_elara_key_change_in_prod"
-    ORIGINS: str = ["http://localhost"]
+    ORIGINS: list[str] = ["http://localhost:5173","http://172.22.160.1:5173", "http://192.168.1.8:5173"]
     model_config = SettingsConfigDict(
         env_file=str(ENV_PATH), env_file_encoding="utf-8", extra="ignore"
     )

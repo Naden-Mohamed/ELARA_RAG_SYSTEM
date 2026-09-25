@@ -10,7 +10,6 @@ from routers import base_router, data_router, rag_router
 from routers.auth_router import auth_router
 from routers.chat_router import chat_router
 from routers.middleware import CorrelationIDMiddleware
-from services.embedding import EmbeddingService
 from services.llm_service import LLMService
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -35,19 +34,20 @@ async def lifespan(app: FastAPI):
     app.state.vectordb = vectordb
     logger.info("Connected to Qdrant")
 
-    app.state.embedding_service = EmbeddingService(
-        default_input_max_characters=settings.INPUT_DEFAULT_MAX_CHARACTERS,
-    )
-    app.state.embedding_service.set_embedding_model(
-        model_id=settings.BGE_EMBEDDING_MODEL_ID,
-        embedding_size=settings.BGE_EMBEDDING_MODEL_SIZE,
-    )
+    # app.state.embedding_service = EmbeddingService(
+    #     default_input_max_characters=settings.INPUT_DEFAULT_MAX_CHARACTERS,
+    # )
+    # app.state.embedding_service.set_embedding_model(
+    #     model_id=settings.BGE_EMBEDDING_MODEL_ID,
+    #     embedding_size=settings.BGE_EMBEDDING_MODEL_SIZE,
+    # )
 
     app.state.llm_service = LLMService()
 
     yield
 
     app.state.mongo_conn.close()
+
     app.state.vectordb.disconnect()
     logger.info("Database connections closed.")
 

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from routers.auth_router import get_current_user
 from routers.schemas.rag_requests import LanguageEnum, MockChunkInput, UserPersonaEnum
 
-chat_router = APIRouter(tags=["Chat & Memory"], prefix="/chat")
+chat_router = APIRouter(tags=["Chat & Memory"], prefix="/api/v1/chat")
 _current_user_dependency = Depends(get_current_user)
 
 

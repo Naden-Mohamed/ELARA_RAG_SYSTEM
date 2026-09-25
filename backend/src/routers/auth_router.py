@@ -16,7 +16,7 @@ from routers.schemas.auth_schemas import (
     UserRegisterRequest,
 )
 
-auth_router = APIRouter(tags=["Authentication"], prefix="/auth")
+auth_router = APIRouter(tags=["Authentication"], prefix="/api/v1/auth")
 security = HTTPBearer()
 
 
