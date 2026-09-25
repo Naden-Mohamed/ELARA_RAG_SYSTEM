@@ -1,0 +1,130 @@
+[
+  {
+    "id": 1,
+    "persona": "doctor",
+    "query": "What are the core elements of a Birth Preparedness and Complication Readiness (BPCR) plan according to WHO recommendations?",
+    "ground_truth": "A BPCR plan contains the desired place of birth, preferred birth attendant, closest facility for birth and complications, funds for expenses, essential supplies, labour and birth companion, home support, transport, and compatible blood donors.",
+    "target_section": "Recommendation 1. Birth Preparedness and Complication Readiness",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 2,
+    "persona": "mother",
+    "query": "What items and preparations should I get ready before giving birth?",
+    "ground_truth": "Preparing the place and birth kit supplies, choosing a birth attendant, saving emergency funds, arranging transport to the facility, and having a companion stay with you.",
+    "target_section": "Recommendation 1. Birth Preparedness and Complication Readiness",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 3,
+    "persona": "doctor",
+    "query": "What is the recommended role of male involvement interventions in maternal and newborn care?",
+    "ground_truth": "Interventions promoting male involvement during pregnancy, childbirth, and postnatal period are recommended to improve self-care, home care practices, use of skilled care, and timely care-seeking for complications, provided women's autonomy is protected.",
+    "target_section": "Recommendation 2. Male involvement interventions for MNH",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 4,
+    "persona": "mother",
+    "query": "How can my husband help during pregnancy and after childbirth?",
+    "ground_truth": "Male involvement helps support home care practices, timely care-seeking, and attending skilled care while respecting the woman's choices and decision-making.",
+    "target_section": "Recommendation 2. Male involvement interventions for MNH",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 5,
+    "persona": "doctor",
+    "query": "What tasks can lay health workers and trained Traditional Birth Attendants (TBAs) perform regarding misoprostol and supplements?",
+    "ground_truth": "Lay health workers including trained TBAs can provide social support during labour, administer misoprostol for PPH prevention, distribute calcium, iron, folate, vitamin A, and malaria prophylaxis, and initiate/maintain injectable contraceptives.",
+    "target_section": "Recommendation 6. Partnership with Traditional Birth Attendants (TBAs)",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 6,
+    "persona": "mother",
+    "query": "Can a traditional birth attendant or community helper give me supplements and postpartum medicines?",
+    "ground_truth": "Trained lay health workers can assist with social support during labour, distribute routine iron, folate, and calcium supplements, and administer misoprostol to prevent bleeding.",
+    "target_section": "Recommendation 6. Partnership with Traditional Birth Attendants (TBAs)",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 7,
+    "persona": "doctor",
+    "query": "What is the clinical recommendation and evidence quality for continuous companionship during labour?",
+    "ground_truth": "Continuous companionship during labour and birth is strongly recommended based on moderate-quality evidence for improving labour outcomes and women's satisfaction with services.",
+    "target_section": "Recommendation 8. Companion of choice at birth",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 8,
+    "persona": "mother",
+    "query": "Am I allowed to bring my family member or partner to stay with me during labour?",
+    "ground_truth": "Continuous companionship from a chosen support person (husband, family member, or doula) is recommended to support you and improve your birth experience.",
+    "target_section": "Recommendation 8. Companion of choice at birth",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 9,
+    "persona": "doctor",
+    "query": "What are the indications and target settings for establishing Maternity Waiting Homes (MWHs)?",
+    "ground_truth": "MWHs are conditionally recommended close to health facilities providing essential childbirth and emergency obstetric care for populations living in remote areas with limited access.",
+    "target_section": "Recommendation 4. Maternity waiting homes",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 10,
+    "persona": "mother",
+    "query": "Can I stay in a waiting home near the hospital before my due date if I live far away?",
+    "ground_truth": "Maternity waiting homes near health facilities provide lodging so pregnant women in remote areas can access skilled care and avoid delays when labour starts.",
+    "target_section": "Recommendation 4. Maternity waiting homes",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 11,
+    "persona": "doctor",
+    "query": "How do facilitated participatory learning and action cycles with women's groups impact neonatal mortality?",
+    "ground_truth": "Community mobilization through facilitated PLA cycles with women's groups is strongly recommended; meta-analyses demonstrate a significant reduction in neonatal mortality, especially in high-coverage rural settings.",
+    "target_section": "Recommendation 9. Community mobilization with women's groups",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 12,
+    "persona": "mother",
+    "query": "How do local women's health groups help reduce baby illness and death?",
+    "ground_truth": "Participating in community women's groups helps identify pregnancy and childbirth problems, organize local support solutions, and improve newborn survival.",
+    "target_section": "Recommendation 9. Community mobilization with women's groups",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 13,
+    "persona": "doctor",
+    "query": "What are the key requirements for implementing community-organized transport schemes for obstetric emergencies?",
+    "ground_truth": "Recommended in settings where other transport is unreliable; schemes must ensure sustainability, reliability, safety, local committee governance, and long-term infrastructure linkages.",
+    "target_section": "Recommendation 5. Community-organized transport schemes",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 14,
+    "persona": "mother",
+    "query": "What emergency plans can our village arrange if a woman has birth complications?",
+    "ground_truth": "Villages can organize community transport plans, emergency funds, and driver support to ensure rapid transfer to the nearest health facility.",
+    "target_section": "Recommendation 5. Community-organized transport schemes",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 15,
+    "persona": "doctor",
+    "query": "What strategies are recommended to provide culturally appropriate skilled maternity care?",
+    "ground_truth": "Ongoing dialogue with communities, incorporating cultural preferences, adapting delivery positions (e.g., vertical birthing), using cultural brokers/interpreters, and training respectful providers.",
+    "target_section": "Recommendation 7. Providing culturally appropriate skilled maternity care",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  },
+  {
+    "id": 16,
+    "persona": "mother",
+    "query": "Can the maternity clinic accommodate my cultural traditions and birthing preferences?",
+    "ground_truth": "Clinics are recommended to engage in community dialogue to respect cultural practices, permit chosen companions, and provide respectful, comfortable care.",
+    "target_section": "Recommendation 7. Providing culturally appropriate skilled maternity care",
+    "source": "WHO Guidelines on Maternal and Newborn Health"
+  }
+]

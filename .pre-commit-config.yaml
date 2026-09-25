@@ -1,0 +1,24 @@
+# Configures pre-commit hooks for Ruff and Mypy
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace       # Trims trailing whitespace
+      - id: end-of-file-fixer         # Ensures files end with a newline
+      - id: check-yaml                # Checks YAML file syntax
+      - id: check-added-large-files   # Prevents accidentally committing giant files
+
+  # 2. Ruff (Linter and Formatter)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.5
+    hooks:
+      - id: ruff                      # Runs the linter and fixes safe issues
+        args: [ --fix ]
+      - id: ruff-format               # Runs the code formatter
+
+  # 3. Mypy (Static Type Checker)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.3.1
+    hooks:
+      - id: mypy
+        additional_dependencies: []

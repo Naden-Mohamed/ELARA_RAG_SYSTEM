@@ -1,0 +1,261 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: rag
+    description: Evidence retrieval and maternal health assistant operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /rag/ask:
+    post:
+      operationId: askRag
+      tags: [rag]
+      summary: Ask the evidence-grounded maternal health assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RagQuestionInput"
+      responses:
+        "200":
+          description: Evidence-grounded answer and retrieval trace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RagAnswer"
+        "400":
+          description: Invalid question
+  /rag/sources:
+    get:
+      operationId: listRagSources
+      tags: [rag]
+      summary: List indexed evidence sources
+      responses:
+        "200":
+          description: Indexed source documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EvidenceSource"
+  /rag/stats:
+    get:
+      operationId: getRagStats
+      tags: [rag]
+      summary: Get index and system health statistics
+      responses:
+        "200":
+          description: Current index statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RagStats"
+  /rag/evaluation:
+    get:
+      operationId: getRagEvaluation
+      tags: [rag]
+      summary: Get retrieval evaluation results
+      responses:
+        "200":
+          description: Evaluation summary and per-question results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationReport"
+  /rag/evaluation/run:
+    post:
+      operationId: runRagEvaluation
+      tags: [rag]
+      summary: Run the built-in retrieval evaluation set
+      responses:
+        "200":
+          description: Fresh evaluation report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationReport"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    RagQuestionInput:
+      type: object
+      properties:
+        question:
+          type: string
+          minLength: 3
+        language:
+          type: string
+          enum: [ar, en, auto]
+      required: [question]
+    EvidenceSource:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        publisher:
+          type: string
+        year:
+          type: number
+        url:
+          type: string
+        chunkCount:
+          type: number
+        reviewed:
+          type: boolean
+      required: [id, title, publisher, year, url, chunkCount, reviewed]
+    Citation:
+      type: object
+      properties:
+        sourceId:
+          type: string
+        sourceTitle:
+          type: string
+        publisher:
+          type: string
+        year:
+          type: number
+        url:
+          type: string
+        chunkId:
+          type: string
+        relevance:
+          type: number
+        excerpt:
+          type: string
+      required: [sourceId, sourceTitle, publisher, year, url, chunkId, relevance, excerpt]
+    RetrievalTrace:
+      type: object
+      properties:
+        queryTerms:
+          type: array
+          items:
+            type: string
+        method:
+          type: string
+        indexedChunks:
+          type: number
+        latencyMs:
+          type: number
+        topScore:
+          type: number
+        confidence:
+          type: string
+          enum: [high, medium, low, insufficient]
+      required: [queryTerms, method, indexedChunks, latencyMs, topScore, confidence]
+    RagAnswer:
+      type: object
+      properties:
+        answer:
+          type: string
+        language:
+          type: string
+          enum: [ar, en]
+        abstained:
+          type: boolean
+        safetyNote:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        trace:
+          $ref: "#/components/schemas/RetrievalTrace"
+      required: [answer, language, abstained, safetyNote, citations, trace]
+    RagStats:
+      type: object
+      properties:
+        indexedSources:
+          type: number
+        indexedChunks:
+          type: number
+        embeddingModel:
+          type: string
+        embeddingDimensions:
+          type: number
+        lastIndexedAt:
+          type: string
+        evaluation:
+          $ref: "#/components/schemas/EvaluationSummary"
+      required: [indexedSources, indexedChunks, embeddingModel, embeddingDimensions, lastIndexedAt, evaluation]
+    EvaluationSummary:
+      type: object
+      properties:
+        total:
+          type: number
+        answered:
+          type: number
+        abstained:
+          type: number
+        top1Accuracy:
+          type: number
+        recallAt3:
+          type: number
+        averageLatencyMs:
+          type: number
+        lastRunAt:
+          type: string
+      required: [total, answered, abstained, top1Accuracy, recallAt3, averageLatencyMs, lastRunAt]
+    EvaluationCaseResult:
+      type: object
+      properties:
+        id:
+          type: string
+        question:
+          type: string
+        category:
+          type: string
+        expectedSourceId:
+          type: string
+        retrievedSourceIds:
+          type: array
+          items:
+            type: string
+        top1Hit:
+          type: boolean
+        recallAt3Hit:
+          type: boolean
+        score:
+          type: number
+        latencyMs:
+          type: number
+      required: [id, question, category, expectedSourceId, retrievedSourceIds, top1Hit, recallAt3Hit, score, latencyMs]
+    EvaluationReport:
+      type: object
+      properties:
+        summary:
+          $ref: "#/components/schemas/EvaluationSummary"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluationCaseResult"
+      required: [summary, results]
